@@ -1,0 +1,88 @@
+# Montra Architecture 🚀
+
+## Overview
+
+Montra is an AI-powered personal finance companion.
+
+The system is divided into three main parts:
+
+1. Mobile Application
+2. Backend API
+3. AI & Data Services
+
+
+## System Architecture
+                 Montra
+
+        ┌─────────────────┐
+        │   Mobile App    │
+        │ React Native    │
+        └────────┬────────┘
+                 │
+                 ▼
+        ┌─────────────────┐
+        │   Backend API   │
+        │    FastAPI      │
+        └────────┬────────┘
+                 │
+        ┌────────┴────────┐
+        ▼                 ▼
+┌───────────────┐  ┌───────────────┐
+│  PostgreSQL   │  │  AI Services  │
+│   Database    │  │ OpenAI Vision │
+└───────────────┘  └───────────────┘
+
+
+## Mobile Application
+
+Technology:
+
+- React Native
+- Expo
+- TypeScript
+
+Responsibilities:
+
+- User interface
+- Expense tracking
+- Receipt scanning
+- Data visualization
+
+
+## Backend API
+
+Technology:
+
+- Python
+- FastAPI
+
+Responsibilities:
+
+- User management
+- Business logic
+- API communication
+- Security
+
+
+## Database
+
+Technology:
+
+- PostgreSQL
+
+Stores:
+
+- Users
+- Expenses
+- Receipts
+- Financial history
+
+
+## AI Services
+
+Responsibilities:
+
+- Receipt understanding
+- Expense categorization
+- Smart financial recommendations
+- AI assistant
