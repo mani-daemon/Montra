@@ -4,6 +4,9 @@
     "slug": "montra",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark"
+    "userInterfaceStyle": "dark",
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

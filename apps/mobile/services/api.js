@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { getToken, clearToken } from './authClient';
+import { globalEvents } from './eventEmitter';
 
-// Local IP address of your PC for testing on physical devices (iOS / Android)
-const BASE_URL = 'http://192.168.1.48:8000';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.48:8000';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -10,32 +11,35 @@ const api = axios.create({
   },
 });
 
-export const getTransactions = async () => {
-  try {
-    const response = await api.get('/transactions');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching transactions:', error);
-    return [];
+// Request Interceptor: Attach Token
+api.interceptors.request.use(async (config) => {
+  const token = await getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+}, (error) => Promise.reject(error));
+
+// Response Interceptor: Handle 401s
+api.interceptors.response.use((response) => response, async (error) => {
+  if (error.response && error.response.status === 401) {
+    await clearToken();
+    globalEvents.emit('logout');
+  }
+  return Promise.reject(error);
+});
+
+export const getTransactions = async () => {
+  const response = await api.get('/transactions');
+  return response.data;
 };
 
 export const getSummary = async () => {
-  try {
-    const response = await api.get('/summary');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching summary:', error);
-    return { balance: 0, total_income: 0, total_expense: 0 };
-  }
+  const response = await api.get('/summary');
+  return response.data;
 };
 
 export const createTransaction = async (transactionData) => {
-  try {
-    const response = await api.post('/transactions', transactionData);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating transaction:', error);
-    throw error;
-  }
+  const response = await api.post('/transactions', transactionData);
+  return response.data;
 };

@@ -1,12 +1,22 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { clearToken } from '../services/authClient';
+import { globalEvents } from '../services/eventEmitter';
+import { COLORS, SIZES } from '../constants/theme';
 
 export default function ProfileScreen() {
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => console.log('Logged out') },
+      { 
+        text: 'Logout', 
+        style: 'destructive', 
+        onPress: async () => {
+          await clearToken();
+          globalEvents.emit('logout');
+        } 
+      },
     ]);
   };
 
@@ -19,7 +29,7 @@ export default function ProfileScreen() {
         {/* User Card */}
         <View style={styles.userCard}>
           <View style={styles.avatarContainer}>
-            <Feather name="user" size={32} color="#FFFFFF" />
+            <Feather name="user" size={32} color={COLORS.text} />
           </View>
           <View>
             <Text style={styles.userName}>Montra User</Text>
@@ -33,29 +43,29 @@ export default function ProfileScreen() {
           
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
-              <Feather name="dollar-sign" size={20} color="#818CF8" />
+              <Feather name="dollar-sign" size={20} color={COLORS.primaryLight} />
               <Text style={styles.menuText}>Currency</Text>
             </View>
             <View style={styles.menuRight}>
               <Text style={styles.menuValue}>USD ($)</Text>
-              <Feather name="chevron-right" size={18} color="#A1A1AA" />
+              <Feather name="chevron-right" size={18} color={COLORS.textSecondary} />
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
-              <Feather name="bell" size={20} color="#818CF8" />
+              <Feather name="bell" size={20} color={COLORS.primaryLight} />
               <Text style={styles.menuText}>Notifications</Text>
             </View>
-            <Feather name="chevron-right" size={18} color="#A1A1AA" />
+            <Feather name="chevron-right" size={18} color={COLORS.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
-              <Feather name="shield" size={20} color="#818CF8" />
+              <Feather name="shield" size={20} color={COLORS.primaryLight} />
               <Text style={styles.menuText}>Security & Privacy</Text>
             </View>
-            <Feather name="chevron-right" size={18} color="#A1A1AA" />
+            <Feather name="chevron-right" size={18} color={COLORS.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -65,8 +75,8 @@ export default function ProfileScreen() {
 
           <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
             <View style={styles.menuLeft}>
-              <Feather name="log-out" size={20} color="#EF4444" />
-              <Text style={[styles.menuText, { color: '#EF4444' }]}>Log Out</Text>
+              <Feather name="log-out" size={20} color={COLORS.danger} />
+              <Text style={[styles.menuText, { color: COLORS.danger }]}>Log Out</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -78,45 +88,45 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#09090B',
+    backgroundColor: COLORS.background,
   },
   scrollContent: {
-    padding: 20,
+    padding: SIZES.padding,
     paddingTop: 60,
     paddingBottom: 100,
   },
   headerTitle: {
-    color: '#FFFFFF',
+    color: COLORS.text,
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
   },
   userCard: {
-    backgroundColor: '#18181B',
+    backgroundColor: COLORS.card,
     borderRadius: 20,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
     borderWidth: 1,
-    borderColor: '#27272A',
+    borderColor: COLORS.cardAlt,
     marginBottom: 24,
   },
   avatarContainer: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#6366F1',
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   userName: {
-    color: '#FFFFFF',
+    color: COLORS.text,
     fontSize: 18,
     fontWeight: 'bold',
   },
   userEmail: {
-    color: '#A1A1AA',
+    color: COLORS.textSecondary,
     fontSize: 14,
     marginTop: 2,
   },
@@ -124,7 +134,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    color: '#A1A1AA',
+    color: COLORS.textSecondary,
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 10,
@@ -132,15 +142,15 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   menuItem: {
-    backgroundColor: '#18181B',
-    borderRadius: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: SIZES.radius,
     padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#27272A',
+    borderColor: COLORS.cardAlt,
   },
   menuLeft: {
     flexDirection: 'row',
@@ -148,7 +158,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   menuText: {
-    color: '#FFFFFF',
+    color: COLORS.text,
     fontSize: 15,
     fontWeight: '500',
   },
@@ -158,7 +168,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   menuValue: {
-    color: '#A1A1AA',
+    color: COLORS.textSecondary,
     fontSize: 14,
   },
 });
