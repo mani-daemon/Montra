@@ -1,137 +1,197 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
-import InsightModal from '../components/InsightModal';
+
+import ScanningOverlay from '../components/Scanner/ScanningOverlay';
+import CameraControls from '../components/Scanner/CameraControls';
+import ReceiptReviewModal from '../components/Scanner/ReceiptReviewModal';
 import { COLORS, SIZES } from '../constants/theme';
-import { useCurrency } from '../context/CurrencyContext';
 
 export default function ScanScreen() {
-  const [image, setImage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [insightVisible, setInsightVisible] = useState(false);
-  const { currency } = useCurrency();
+  const [permission, requestPermission] = useCameraPermissions();
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [isReviewing, setIsReviewing] = useState(false);
+  const [flash, setFlash] = useState('off');
+  const cameraRef = useRef(null);
 
-  const pickImage = async () => {
+  if (!permission) {
+    return <View style={styles.container} />;
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={styles.permissionContainer}>
+        <View style={styles.permissionIconWrapper}>
+          <Feather name="camera-off" size={40} color={COLORS.danger} />
+        </View>
+        <Text style={styles.permissionTitle}>Camera Access Required</Text>
+        <Text style={styles.permissionMessage}>
+          Montra needs access to your camera to scan receipts and invoices automatically.
+        </Text>
+        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+          <Text style={styles.permissionButtonText}>Grant Permission</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const handleCapture = async () => {
+    if (cameraRef.current) {
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.8,
+          base64: false,
+        });
+        setCapturedImage(photo.uri);
+        setIsReviewing(true);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to capture image');
+      }
+    }
+  };
+
+  const handleGalleryPick = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
       quality: 0.8,
     });
 
     if (!result.canceled) {
-      setImage(result.assets[0].uri);
+      setCapturedImage(result.assets[0].uri);
+      setIsReviewing(true);
     }
   };
 
-  const analyzeReceipt = () => {
-    if (!image) return;
-    setLoading(true);
-
-    setTimeout(() => {
-      setLoading(false);
-      setInsightVisible(true);
-    }, 2000);
+  const toggleFlash = () => {
+    setFlash((current) => (current === 'off' ? 'on' : 'off'));
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerTitle}>AI Receipt Scanner</Text>
-      <Text style={styles.subtitle}>Upload or scan a receipt to extract expenses automatically</Text>
-
-      <View style={styles.uploadCard}>
-        {image ? (
-          <Image source={{ uri: image }} style={styles.previewImage} />
-        ) : (
-          <View style={styles.placeholderBox}>
-            <Feather name="file-text" size={60} color={COLORS.primaryLight} />
-            <Text style={styles.placeholderText}>No receipt selected</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.secondaryButton} onPress={pickImage}>
-          <Feather name="image" size={20} color={COLORS.text} style={{ marginRight: 8 }} />
-          <Text style={styles.secondaryButtonText}>Choose from Gallery</Text>
-        </TouchableOpacity>
-
-        {image && (
-          <TouchableOpacity 
-            style={[styles.primaryButton, loading && { opacity: 0.7 }]} 
-            onPress={analyzeReceipt}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color={COLORS.text} />
-            ) : (
-              <>
-                <Feather name="cpu" size={20} color={COLORS.text} style={{ marginRight: 8 }} />
-                <Text style={styles.primaryButtonText}>Analyze with AI</Text>
-              </>
-            )}
+      <CameraView 
+        style={styles.camera} 
+        ref={cameraRef}
+        flash={flash}
+        facing="back"
+      >
+        {/* Top Header Controls */}
+        <View style={styles.headerControls}>
+          <TouchableOpacity style={styles.headerButton} onPress={toggleFlash}>
+            <Feather 
+              name={flash === 'on' ? 'zap' : 'zap-off'} 
+              size={20} 
+              color={flash === 'on' ? COLORS.primaryLight : COLORS.text} 
+            />
           </TouchableOpacity>
-        )}
-      </View>
+          <View style={styles.modePill}>
+            <Text style={styles.modeText}>Single Receipt</Text>
+          </View>
+          <TouchableOpacity style={styles.headerButton}>
+            <Feather name="help-circle" size={20} color={COLORS.text} />
+          </TouchableOpacity>
+        </View>
 
-      <InsightModal
-        visible={insightVisible}
-        onClose={() => setInsightVisible(false)}
-        title="✨ AI Analysis Complete"
-        message={`Store: Walmart\nDate: Today\nTotal Amount: ${currency.symbol}42.50\nCategory: Grocery`}
-        actions={[
-          {
-            text: 'Save Transaction',
-            primary: true,
-            onPress: () => setImage(null),
-          },
-          {
-            text: 'Cancel',
-            primary: false,
-            onPress: () => {},
-          }
-        ]}
+        {/* Reanimated Overlay & Viewfinder */}
+        <ScanningOverlay />
+
+        {/* Bottom Shutter & Controls */}
+        <CameraControls 
+          onCapture={handleCapture}
+          onPickGallery={handleGalleryPick}
+        />
+      </CameraView>
+
+      {/* Review & Edit Modal */}
+      <ReceiptReviewModal
+        visible={isReviewing}
+        imageUri={capturedImage}
+        onClose={() => {
+          setIsReviewing(false);
+          setCapturedImage(null);
+        }}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background, paddingTop: 60, paddingHorizontal: 20 },
-  headerTitle: { color: COLORS.text, fontSize: 24, fontWeight: 'bold' },
-  subtitle: { color: COLORS.textSecondary, fontSize: 14, marginTop: 6, marginBottom: 24 },
-  uploadCard: {
-    height: 320,
-    backgroundColor: COLORS.card,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    borderStyle: 'dashed',
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  camera: {
+    flex: 1,
+  },
+  headerControls: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SIZES.padding,
+    zIndex: 10,
+  },
+  headerButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(39, 39, 42, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
+  },
+  modePill: {
+    backgroundColor: 'rgba(99, 102, 241, 0.9)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  modeText: {
+    color: COLORS.text,
+    fontSize: SIZES.sm,
+    fontWeight: '600',
+  },
+  permissionContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SIZES.padding,
+  },
+  permissionIconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(248, 113, 113, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 24,
   },
-  previewImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  placeholderBox: { alignItems: 'center' },
-  placeholderText: { color: COLORS.textSecondary, fontSize: 15, marginTop: 12 },
-  actionsContainer: { gap: 12 },
-  secondaryButton: {
-    backgroundColor: COLORS.cardAlt,
-    borderRadius: 14,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+  permissionTitle: {
+    color: COLORS.text,
+    fontSize: SIZES.lg,
+    fontWeight: 'bold',
+    marginBottom: 12,
   },
-  secondaryButtonText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-  primaryButton: {
+  permissionMessage: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.md,
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  permissionButton: {
     backgroundColor: COLORS.primary,
-    borderRadius: 14,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: SIZES.radius,
   },
-  primaryButtonText: { color: COLORS.text, fontSize: 16, fontWeight: 'bold' },
+  permissionButtonText: {
+    color: COLORS.text,
+    fontSize: SIZES.md,
+    fontWeight: 'bold',
+  },
 });
