@@ -1,0 +1,1577 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.claude/
+  settings.json
+assets/
+  adaptive-icon.png
+  favicon.png
+  icon.png
+  splash-icon.png
+components/
+  AddTransactionModal.js
+navigation/
+  AppNavigator.js
+screens/
+  AnalyticsScreen.js
+  AssistantScreen.js
+  HomeScreen.js
+  LoginScreen.js
+  ProfileScreen.js
+  ScanScreen.js
+  WelcomeScreen.js
+services/
+  api.js
+.gitignore
+AGENTS.md
+App.js
+app.json
+CLAUDE.md
+index.js
+package.json
+tailwind.config.js
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".claude/settings.json">
+{
+  "enabledPlugins": {
+    "expo@claude-plugins-official": true
+  }
+}
+</file>
+
+<file path="components/AddTransactionModal.js">
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { createTransaction } from '../services/api';
+
+const CATEGORIES = ['Food', 'Shopping', 'Salary', 'Entertainment', 'Transport', 'General'];
+
+export default function AddTransactionModal({ visible, onClose, onSuccess }) {
+  const [title, setTitle] = useState('');
+  const [amount, setAmount] = useState('');
+  const [type, setType] = useState('expense'); // 'expense' or 'income'
+  const [category, setCategory] = useState('Food');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !amount.trim()) {
+      Alert.alert('Error', 'Please fill in both title and amount.');
+      return;
+    }
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      Alert.alert('Error', 'Please enter a valid amount.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await createTransaction({
+        title: title.trim(),
+        amount: parsedAmount,
+        type: type,
+        category: category,
+      });
+
+      // Reset form
+      setTitle('');
+      setAmount('');
+      setType('expense');
+      setCategory('Food');
+
+      onSuccess(); // Refresh home screen data
+      onClose(); // Close modal
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save transaction. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        <View style={styles.modalContainer}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Add Transaction</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Feather name="x" size={20} color="#A1A1AA" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Type Selector (Income / Expense) */}
+          <View style={styles.typeContainer}>
+            <TouchableOpacity
+              style={[styles.typeButton, type === 'expense' && styles.expenseActive]}
+              onPress={() => setType('expense')}
+            >
+              <Feather
+                name="arrow-up-right"
+                size={18}
+                color={type === 'expense' ? '#FFFFFF' : '#A1A1AA'}
+              />
+              <Text style={[styles.typeText, type === 'expense' && styles.activeText]}>
+                Expense
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.typeButton, type === 'income' && styles.incomeActive]}
+              onPress={() => setType('income')}
+            >
+              <Feather
+                name="arrow-down-left"
+                size={18}
+                color={type === 'income' ? '#FFFFFF' : '#A1A1AA'}
+              />
+              <Text style={[styles.typeText, type === 'income' && styles.activeText]}>
+                Income
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Title Input */}
+          <Text style={styles.label}>Title</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. Grocery Shopping"
+            placeholderTextColor="#52525B"
+            value={title}
+            onChangeText={setTitle}
+          />
+
+          {/* Amount Input */}
+          <Text style={styles.label}>Amount ($)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="0.00"
+            placeholderTextColor="#52525B"
+            keyboardType="numeric"
+            value={amount}
+            onChangeText={setAmount}
+          />
+
+          {/* Category Selector */}
+          <Text style={styles.label}>Category</Text>
+          <View style={styles.categoriesContainer}>
+            {CATEGORIES.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[
+                  styles.categoryChip,
+                  category === cat && styles.categoryChipActive,
+                ]}
+                onPress={() => setCategory(cat)}
+              >
+                <Text
+                  style={[
+                    styles.categoryText,
+                    category === cat && styles.categoryTextActive,
+                  ]}
+                >
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Submit Button */}
+          <TouchableOpacity
+            style={styles.submitButton}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitButtonText}>Save Transaction</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: '#18181B',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    backgroundColor: '#27272A',
+    padding: 8,
+    borderRadius: 20,
+  },
+  typeContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#27272A',
+    borderRadius: 16,
+    padding: 4,
+    marginBottom: 20,
+  },
+  typeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  expenseActive: {
+    backgroundColor: '#EF4444',
+  },
+  incomeActive: {
+    backgroundColor: '#22C55E',
+  },
+  typeText: {
+    color: '#A1A1AA',
+    fontWeight: '600',
+  },
+  activeText: {
+    color: '#FFFFFF',
+  },
+  label: {
+    color: '#A1A1AA',
+    fontSize: 13,
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  input: {
+    backgroundColor: '#27272A',
+    color: '#FFFFFF',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  categoriesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 28,
+  },
+  categoryChip: {
+    backgroundColor: '#27272A',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  categoryChipActive: {
+    backgroundColor: '#6366F1',
+  },
+  categoryText: {
+    color: '#A1A1AA',
+    fontSize: 13,
+  },
+  categoryTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  submitButton: {
+    backgroundColor: '#6366F1',
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
+</file>
+
+<file path="navigation/AppNavigator.js">
+import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+
+import HomeScreen from '../screens/HomeScreen';
+import AnalyticsScreen from '../screens/AnalyticsScreen';
+import ScanScreen from '../screens/ScanScreen';
+import AssistantScreen from '../screens/AssistantScreen';
+
+const Tab = createBottomTabNavigator();
+
+export default function AppNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarShowLabel: true,
+        tabBarStyle: {
+          backgroundColor: '#13131A',
+          borderTopColor: '#2D2D3D',
+          borderTopWidth: 1,
+          height: 65,
+          paddingBottom: 10,
+          paddingTop: 8,
+        },
+        tabBarActiveTintColor: '#7F3DFF',
+        tabBarInactiveTintColor: '#8F90A6',
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          if (route.name === 'Home') {
+            iconName = focused ? 'wallet' : 'wallet-outline';
+          } else if (route.name === 'Analytics') {
+            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+          } else if (route.name === 'Scan') {
+            iconName = focused ? 'scan' : 'scan-outline';
+          } else if (route.name === 'AI Assistant') {
+            iconName = focused ? 'sparkles' : 'sparkles-outline';
+          }
+
+          return <Ionicons name={iconName} size={22} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Analytics" component={AnalyticsScreen} />
+      <Tab.Screen name="Scan" component={ScanScreen} />
+      <Tab.Screen name="AI Assistant" component={AssistantScreen} />
+    </Tab.Navigator>
+  );
+}
+</file>
+
+<file path="screens/AnalyticsScreen.js">
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, RefreshControl, StyleSheet, Dimensions } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { BarChart, PieChart } from 'react-native-gifted-charts';
+import { getTransactions, getSummary } from '../services/api';
+
+const { width } = Dimensions.get('window');
+
+const CATEGORY_COLORS = {
+  Food: '#F59E0B',
+  Shopping: '#EC4899',
+  Salary: '#10B981',
+  Entertainment: '#8B5CF6',
+  Transport: '#3B82F6',
+  General: '#6B7280',
+};
+
+export default function AnalyticsScreen() {
+  const [refreshing, setRefreshing] = useState(false);
+  const [summary, setSummary] = useState({ balance: 0, total_income: 0, total_expense: 0 });
+  const [pieData, setPieData] = useState([]);
+  const [barData, setBarData] = useState([]);
+
+  const fetchData = async () => {
+    try {
+      const summaryData = await getSummary();
+      const transactions = await getTransactions();
+
+      setSummary(summaryData);
+
+      // ۱. آماده‌سازی داده‌ها برای نمودار میله‌ای (Income vs Expense)
+      const barChartData = [
+        {
+          value: summaryData.total_income,
+          label: 'Income',
+          frontColor: '#10B981',
+          topLabelComponent: () => (
+            <Text style={{ color: '#10B981', fontSize: 11, fontWeight: 'bold', marginBottom: 4 }}>
+              ${summaryData.total_income}
+            </Text>
+          ),
+        },
+        {
+          value: summaryData.total_expense,
+          label: 'Expense',
+          frontColor: '#EF4444',
+          topLabelComponent: () => (
+            <Text style={{ color: '#EF4444', fontSize: 11, fontWeight: 'bold', marginBottom: 4 }}>
+              ${summaryData.total_expense}
+            </Text>
+          ),
+        },
+      ];
+      setBarData(barChartData);
+
+      // ۲. آماده‌سازی داده‌ها برای نمودار دونات/دایره‌ای (Expense Categories)
+      const expenses = transactions.filter((t) => t.type === 'expense');
+      const totals = {};
+      expenses.forEach((t) => {
+        totals[t.category] = (totals[t.category] || 0) + t.amount;
+      });
+
+      const pieChartData = Object.keys(totals).map((cat) => ({
+        value: totals[cat],
+        color: CATEGORY_COLORS[cat] || '#6366F1',
+        text: cat,
+      }));
+
+      setPieData(pieChartData);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" />
+        }
+      >
+        {/* Header */}
+        <Text style={styles.headerTitle}>Financial Analytics</Text>
+
+        {/* Chart 1: Bar Chart (Income vs Expenses) */}
+        <View style={styles.chartCard}>
+          <Text style={styles.chartTitle}>Income vs Expense</Text>
+          <View style={{ alignItems: 'center', marginTop: 10 }}>
+            <BarChart
+              data={barData}
+              barWidth={45}
+              initialSpacing={40}
+              spacing={50}
+              barBorderRadius={8}
+              yAxisThickness={0}
+              xAxisThickness={0}
+              xAxisLabelTextStyle={{ color: '#A1A1AA', fontSize: 12, fontWeight: '600' }}
+              noOfSections={3}
+              maxValue={Math.max(summary.total_income, summary.total_expense, 100) * 1.2}
+              isAnimated
+            />
+          </View>
+        </View>
+
+        {/* Chart 2: Donut/Pie Chart (Expense Breakdown) */}
+        <View style={styles.chartCard}>
+          <Text style={styles.chartTitle}>Expense Breakdown</Text>
+          
+          {pieData.length > 0 ? (
+            <View style={{ alignItems: 'center', marginVertical: 15 }}>
+              <PieChart
+                data={pieData}
+                donut
+                showGradient
+                sectionAutoFocus
+                radius={90}
+                innerRadius={60}
+                innerCircleColor={'#18181B'}
+                centerLabelComponent={() => {
+                  return (
+                    <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 18, color: '#FFFFFF', fontWeight: 'bold' }}>
+                        ${summary.total_expense.toFixed(0)}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#A1A1AA' }}>Spent</Text>
+                    </View>
+                  );
+                }}
+              />
+
+              {/* Legend / راهنمای رنگ‌ها */}
+              <View style={styles.legendContainer}>
+                {pieData.map((item) => (
+                  <View key={item.text} style={styles.legendItem}>
+                    <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+                    <Text style={styles.legendText}>{item.text}</Text>
+                    <Text style={styles.legendValue}>${item.value.toFixed(2)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : (
+            <Text style={styles.emptyText}>No expense data available to build chart.</Text>
+          )}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#09090B',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingTop: 60,
+    paddingBottom: 100,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  chartCard: {
+    backgroundColor: '#18181B',
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#27272A',
+  },
+  chartTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 20,
+    justifyContent: 'center',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#27272A',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  colorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  legendValue: {
+    color: '#A1A1AA',
+    fontSize: 12,
+    marginLeft: 4,
+  },
+  emptyText: {
+    color: '#A1A1AA',
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+});
+</file>
+
+<file path="screens/AssistantScreen.js">
+import React, { useState } from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  TextInput, 
+  TouchableOpacity, 
+  FlatList, 
+  KeyboardAvoidingView, 
+  Platform,
+  ActivityIndicator 
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+export default function AssistantScreen() {
+  const [messages, setMessages] = useState([
+    {
+      id: '1',
+      sender: 'ai',
+      text: "Hello Mani! 👋 I'm your Montra Financial Assistant. Ask me anything about your balance, spending habits, or budget goals.",
+    },
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+
+  // پیشنهادهای آماده برای پرسش سریع
+  const quickPrompts = [
+    "📊 How much did I spend this week?",
+    "💡 Give me 3 tips to save money",
+    "☕ Show my coffee expenses",
+  ];
+
+  const handleSend = (textToSend) => {
+    const messageContent = textToSend || inputText;
+    if (!messageContent.trim()) return;
+
+    // ۱. اضافه کردن پیام کاربر
+    const userMsg = { id: Date.now().toString(), sender: 'user', text: messageContent };
+    setMessages((prev) => [...prev, userMsg]);
+    if (!textToSend) setInputText('');
+    setIsTyping(true);
+
+    // ۲. شبیه‌سازی پاسخ هوش مصنوعی
+    setTimeout(() => {
+      let aiResponseText = "I analyzed your recent transactions. You spent $125 on groceries and $15 on coffee this week. You're well within your $500 monthly budget!";
+      
+      if (messageContent.includes("tips") || messageContent.includes("save")) {
+        aiResponseText = "💡 Here are 3 quick tips:\n1. Limit food delivery to twice a week.\n2. Review your recurring app subscriptions.\n3. Transfer 10% of income to savings automatically.";
+      }
+
+      const aiMsg = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiResponseText };
+      setMessages((prev) => [...prev, aiMsg]);
+      setIsTyping(false);
+    }, 1500);
+  };
+
+  return (
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <Ionicons name="sparkles" size={24} color="#7F3DFF" />
+        <View style={{ marginLeft: 10 }}>
+          <Text style={styles.headerTitle}>Montra AI Advisor</Text>
+          <Text style={styles.headerSubtitle}>Powered by Financial Vision AI</Text>
+        </View>
+      </View>
+
+      {/* Messages List */}
+      <FlatList
+        data={messages}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.messagesContainer}
+        renderItem={({ item }) => (
+          <View style={[
+            styles.messageBubble, 
+            item.sender === 'user' ? styles.userBubble : styles.aiBubble
+          ]}>
+            <Text style={[
+              styles.messageText,
+              item.sender === 'user' ? styles.userMessageText : styles.aiMessageText
+            ]}>
+              {item.text}
+            </Text>
+          </View>
+        )}
+        ListFooterComponent={
+          isTyping ? (
+            <View style={[styles.messageBubble, styles.aiBubble, { width: 80 }]}>
+              <ActivityIndicator color="#7F3DFF" size="small" />
+            </View>
+          ) : null
+        }
+      />
+
+      {/* Quick Prompts */}
+      <View style={styles.promptsContainer}>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={quickPrompts}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.promptChip} onPress={() => handleSend(item)}>
+              <Text style={styles.promptText}>{item}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+
+      {/* Input Bar */}
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Ask Montra AI..."
+          placeholderTextColor="#8F90A6"
+          value={inputText}
+          onChangeText={setInputText}
+        />
+        <TouchableOpacity style={styles.sendButton} onPress={() => handleSend()}>
+          <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#09090E',
+    paddingTop: 50,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E1E2D',
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  headerSubtitle: {
+    color: '#8F90A6',
+    fontSize: 12,
+  },
+  messagesContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    gap: 12,
+  },
+  messageBubble: {
+    maxWidth: '82%',
+    padding: 14,
+    borderRadius: 18,
+    marginBottom: 8,
+  },
+  aiBubble: {
+    backgroundColor: '#1E1E2D',
+    alignSelf: 'flex-start',
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: '#2D2D3D',
+  },
+  userBubble: {
+    backgroundColor: '#7F3DFF',
+    alignSelf: 'flex-end',
+    borderBottomRightRadius: 4,
+  },
+  messageText: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  aiMessageText: {
+    color: '#FFFFFF',
+  },
+  userMessageText: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  promptsContainer: {
+    paddingHorizontal: 15,
+    marginBottom: 10,
+  },
+  promptChip: {
+    backgroundColor: '#1E1E2D',
+    borderColor: '#2D2D3D',
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginRight: 8,
+  },
+  promptText: {
+    color: '#8F90A6',
+    fontSize: 13,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#13131A',
+    borderTopWidth: 1,
+    borderTopColor: '#2D2D3D',
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#1E1E2D',
+    color: '#FFFFFF',
+    borderRadius: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    fontSize: 15,
+    marginRight: 10,
+  },
+  sendButton: {
+    backgroundColor: '#7F3DFF',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
+</file>
+
+<file path="screens/HomeScreen.js">
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { getTransactions, getSummary } from '../services/api';
+import AddTransactionModal from '../components/AddTransactionModal';
+
+export default function HomeScreen() {
+  const [refreshing, setRefreshing] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [summary, setSummary] = useState({ balance: 0, total_income: 0, total_expense: 0 });
+  const [transactions, setTransactions] = useState([]);
+
+  const fetchData = async () => {
+    try {
+      const summaryData = await getSummary();
+      const transactionsData = await getTransactions();
+      
+      setSummary(summaryData);
+      setTransactions(transactionsData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
+
+  const handleAIAssistant = () => {
+    Alert.alert(
+      'AI Financial Assistant 🤖',
+      'Based on your recent transactions, you spent $9.00 on Food (Coffee). Your budget is healthy!',
+      [{ text: 'Got it!' }]
+    );
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#09090B' }}>
+      <ScrollView 
+        contentContainerStyle={{ padding: 20, paddingTop: 60, paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" />
+        }
+      >
+        {/* Header */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <View>
+            <Text style={{ color: '#A1A1AA', fontSize: 14 }}>Welcome back,</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: 'bold' }}>Montra User</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            {/* AI Assistant Button */}
+            <TouchableOpacity 
+              onPress={handleAIAssistant}
+              style={{ backgroundColor: '#6366F120', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#6366F1' }}
+            >
+              <Feather name="cpu" size={20} color="#818CF8" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={{ backgroundColor: '#18181B', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#27272A' }}>
+              <Feather name="bell" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* AI Insight Banner */}
+        <TouchableOpacity 
+          onPress={handleAIAssistant}
+          style={{ 
+            backgroundColor: '#18181B', 
+            borderRadius: 16, 
+            padding: 14, 
+            marginBottom: 20, 
+            flexDirection: 'row', 
+            alignItems: 'center', 
+            gap: 12,
+            borderWidth: 1,
+            borderColor: '#3F3F46'
+          }}
+        >
+          <View style={{ backgroundColor: '#6366F1', padding: 8, borderRadius: 10 }}>
+            <Feather name="zap" size={18} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 14 }}>AI Smart Insight</Text>
+            <Text style={{ color: '#A1A1AA', fontSize: 12 }}>Tap to analyze your $9.00 coffee spending habit.</Text>
+          </View>
+          <Feather name="chevron-right" size={18} color="#A1A1AA" />
+        </TouchableOpacity>
+
+        {/* Total Balance Card */}
+        <View style={{ backgroundColor: '#6366F1', borderRadius: 24, padding: 20, marginBottom: 24 }}>
+          <Text style={{ color: '#C7D2FE', fontSize: 14, marginBottom: 8 }}>Total Balance</Text>
+          <Text style={{ color: '#FFFFFF', fontSize: 32, fontWeight: 'bold', marginBottom: 20 }}>
+            ${summary.balance.toFixed(2)}
+          </Text>
+          
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 16, padding: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Feather name="arrow-down-left" size={20} color="#4ADE80" />
+              <View style={{ marginLeft: 8 }}>
+                <Text style={{ color: '#E0E7FF', fontSize: 12 }}>Income</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>${summary.total_income.toFixed(2)}</Text>
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Feather name="arrow-up-right" size={20} color="#F87171" />
+              <View style={{ marginLeft: 8 }}>
+                <Text style={{ color: '#E0E7FF', fontSize: 12 }}>Expenses</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>${summary.total_expense.toFixed(2)}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Recent Transactions Header */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' }}>Recent Transactions</Text>
+          <TouchableOpacity onPress={() => setModalVisible(true)}>
+            <Text style={{ color: '#818CF8', fontWeight: '600', fontSize: 14 }}>+ Add New</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Transactions List */}
+        {transactions.length === 0 ? (
+          <Text style={{ color: '#A1A1AA', textAlign: 'center', marginTop: 20 }}>No transactions found</Text>
+        ) : (
+          transactions.map((item) => (
+            <View key={item.id} style={{ backgroundColor: '#18181B', borderRadius: 16, padding: 16, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ backgroundColor: '#27272A', padding: 12, borderRadius: 12, marginRight: 12 }}>
+                  <Feather name={item.type === 'income' ? 'arrow-down-left' : 'arrow-up-right'} size={20} color={item.type === 'income' ? '#4ADE80' : '#F87171'} />
+                </View>
+                <View>
+                  <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 16 }}>{item.title}</Text>
+                  <Text style={{ color: '#A1A1AA', fontSize: 12 }}>{item.category}</Text>
+                </View>
+              </View>
+              <Text style={{ color: item.type === 'income' ? '#4ADE80' : '#FFFFFF', fontWeight: 'bold', fontSize: 16 }}>
+                {item.type === 'income' ? '+' : '-'}${item.amount.toFixed(2)}
+              </Text>
+            </View>
+          ))
+        )}
+      </ScrollView>
+
+      {/* Floating Action Button (FAB) */}
+      <TouchableOpacity 
+        style={{
+          position: 'absolute',
+          bottom: 24,
+          right: 24,
+          backgroundColor: '#6366F1',
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          justifyContent: 'center',
+          alignItems: 'center',
+          elevation: 8,
+          shadowColor: '#6366F1',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.4,
+          shadowRadius: 8,
+        }}
+        onPress={() => setModalVisible(true)}
+      >
+        <Feather name="plus" size={28} color="#FFFFFF" />
+      </TouchableOpacity>
+
+      {/* Modal */}
+      <AddTransactionModal 
+        visible={modalVisible} 
+        onClose={() => setModalVisible(false)} 
+        onSuccess={fetchData} 
+      />
+    </View>
+  );
+}
+</file>
+
+<file path="screens/LoginScreen.js">
+
+</file>
+
+<file path="screens/ProfileScreen.js">
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+
+export default function ProfileScreen() {
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: () => console.log('Logged out') },
+    ]);
+  };
+
+  return (
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Header Title */}
+        <Text style={styles.headerTitle}>Profile & Settings</Text>
+
+        {/* User Card */}
+        <View style={styles.userCard}>
+          <View style={styles.avatarContainer}>
+            <Feather name="user" size={32} color="#FFFFFF" />
+          </View>
+          <View>
+            <Text style={styles.userName}>Montra User</Text>
+            <Text style={styles.userEmail}>user@montra.app</Text>
+          </View>
+        </View>
+
+        {/* Settings Group 1: Preferences */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Preferences</Text>
+          
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuLeft}>
+              <Feather name="dollar-sign" size={20} color="#818CF8" />
+              <Text style={styles.menuText}>Currency</Text>
+            </View>
+            <View style={styles.menuRight}>
+              <Text style={styles.menuValue}>USD ($)</Text>
+              <Feather name="chevron-right" size={18} color="#A1A1AA" />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuLeft}>
+              <Feather name="bell" size={20} color="#818CF8" />
+              <Text style={styles.menuText}>Notifications</Text>
+            </View>
+            <Feather name="chevron-right" size={18} color="#A1A1AA" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuLeft}>
+              <Feather name="shield" size={20} color="#818CF8" />
+              <Text style={styles.menuText}>Security & Privacy</Text>
+            </View>
+            <Feather name="chevron-right" size={18} color="#A1A1AA" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Settings Group 2: Account Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+
+          <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+            <View style={styles.menuLeft}>
+              <Feather name="log-out" size={20} color="#EF4444" />
+              <Text style={[styles.menuText, { color: '#EF4444' }]}>Log Out</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#09090B',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingTop: 60,
+    paddingBottom: 100,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  userCard: {
+    backgroundColor: '#18181B',
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    borderWidth: 1,
+    borderColor: '#27272A',
+    marginBottom: 24,
+  },
+  avatarContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#6366F1',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userName: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  userEmail: {
+    color: '#A1A1AA',
+    fontSize: 14,
+    marginTop: 2,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    color: '#A1A1AA',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 10,
+    marginLeft: 4,
+    textTransform: 'uppercase',
+  },
+  menuItem: {
+    backgroundColor: '#18181B',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#27272A',
+  },
+  menuLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  menuText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  menuRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  menuValue: {
+    color: '#A1A1AA',
+    fontSize: 14,
+  },
+});
+</file>
+
+<file path="screens/ScanScreen.js">
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
+
+export default function ScanScreen() {
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const analyzeReceipt = () => {
+    if (!image) return;
+    setLoading(true);
+
+    setTimeout(() => {
+      setLoading(false);
+      Alert.alert(
+        "✨ AI Analysis Complete",
+        "Store: Walmart\nDate: Today\nTotal Amount: $42.50\nCategory: Grocery",
+        [{ text: "Save Transaction", onPress: () => setImage(null) }]
+      );
+    }, 2000);
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.headerTitle}>AI Receipt Scanner</Text>
+      <Text style={styles.subtitle}>Upload or scan a receipt to extract expenses automatically</Text>
+
+      <View style={styles.uploadCard}>
+        {image ? (
+          <Image source={{ uri: image }} style={styles.previewImage} />
+        ) : (
+          <View style={styles.placeholderBox}>
+            <Ionicons name="document-text-outline" size={60} color="#7F3DFF" />
+            <Text style={styles.placeholderText}>No receipt selected</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.actionsContainer}>
+        <TouchableOpacity style={styles.secondaryButton} onPress={pickImage}>
+          <Ionicons name="images-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+          <Text style={styles.secondaryButtonText}>Choose from Gallery</Text>
+        </TouchableOpacity>
+
+        {image && (
+          <TouchableOpacity 
+            style={[styles.primaryButton, loading && { opacity: 0.7 }]} 
+            onPress={analyzeReceipt}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons name="sparkles" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={styles.primaryButtonText}>Analyze with AI</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#09090E', paddingTop: 60, paddingHorizontal: 20 },
+  headerTitle: { color: '#FFFFFF', fontSize: 24, fontWeight: 'bold' },
+  subtitle: { color: '#8F90A6', fontSize: 14, marginTop: 6, marginBottom: 24 },
+  uploadCard: {
+    height: 320,
+    backgroundColor: '#1E1E2D',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#2D2D3D',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    marginBottom: 24,
+  },
+  previewImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  placeholderBox: { alignItems: 'center' },
+  placeholderText: { color: '#8F90A6', fontSize: 15, marginTop: 12 },
+  actionsContainer: { gap: 12 },
+  secondaryButton: {
+    backgroundColor: '#2D2D3D',
+    borderRadius: 14,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  secondaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  primaryButton: {
+    backgroundColor: '#7F3DFF',
+    borderRadius: 14,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+});
+</file>
+
+<file path="screens/WelcomeScreen.js">
+
+</file>
+
+<file path="services/api.js">
+// Local IP address of your PC for testing on physical devices (iOS / Android)
+const BASE_URL = 'http://192.168.1.48:8000';
+
+export const getTransactions = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/transactions`);
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    return [];
+  }
+};
+
+export const getSummary = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/summary`);
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching summary:', error);
+    return { balance: 0, total_income: 0, total_expense: 0 };
+  }
+};
+
+export const createTransaction = async (transactionData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/transactions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(transactionData),
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
+  } catch (error) {
+    console.error('Error creating transaction:', error);
+    throw error;
+  }
+};
+</file>
+
+<file path=".gitignore">
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+</file>
+
+<file path="AGENTS.md">
+# Expo HAS CHANGED
+
+Read the exact versioned docs at https://docs.expo.dev/versions/v52.0.0/ before writing any code.
+</file>
+
+<file path="App.js">
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Feather } from '@expo/vector-icons';
+
+import HomeScreen from './screens/HomeScreen';
+import AnalyticsScreen from './screens/AnalyticsScreen';
+import ProfileScreen from './screens/ProfileScreen';
+
+const Tab = createBottomTabNavigator();
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarShowLabel: true,
+          tabBarStyle: {
+            backgroundColor: '#18181B',
+            borderTopColor: '#27272A',
+            height: 65,
+            paddingBottom: 10,
+            paddingTop: 8,
+          },
+          tabBarActiveTintColor: '#6366F1',
+          tabBarInactiveTintColor: '#A1A1AA',
+          tabBarIcon: ({ color, size }) => {
+            let iconName;
+            if (route.name === 'Home') iconName = 'home';
+            else if (route.name === 'Analytics') iconName = 'pie-chart';
+            else if (route.name === 'Profile') iconName = 'user';
+
+            return <Feather name={iconName} size={size} color={color} />;
+          },
+        })}
+      >
+        <Tab.Screen name="Home" component={HomeScreen} />
+        <Tab.Screen name="Analytics" component={AnalyticsScreen} />
+        <Tab.Screen name="Profile" component={ProfileScreen} />
+      </Tab.Navigator>
+    </NavigationContainer>
+  );
+}
+</file>
+
+<file path="app.json">
+{
+  "expo": {
+    "name": "Montra",
+    "slug": "montra",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark"
+  }
+}
+</file>
+
+<file path="CLAUDE.md">
+@AGENTS.md
+</file>
+
+<file path="index.js">
+import { registerRootComponent } from 'expo';
+
+import App from './App';
+
+// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
+// It also ensures that whether you load the app in Expo Go or in a native build,
+// the environment is set up appropriately
+registerRootComponent(App);
+</file>
+
+<file path="package.json">
+{
+  "name": "mobile",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.3",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-navigation/bottom-tabs": "^7.18.14",
+    "@react-navigation/native": "^7.3.14",
+    "@react-navigation/native-stack": "^7.18.6",
+    "axios": "^1.18.1",
+    "expo": "~54.0.0",
+    "expo-asset": "~12.0.13",
+    "expo-image-picker": "~17.0.11",
+    "expo-linear-gradient": "~15.0.8",
+    "expo-status-bar": "~3.0.9",
+    "nativewind": "^4.2.6",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-gifted-charts": "^1.4.77",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-svg": "15.12.1",
+    "tailwindcss": "^3.4.19"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "eslint": "^10.8.0",
+    "prettier": "^3.9.6"
+  },
+  "private": true
+}
+</file>
+
+<file path="tailwind.config.js">
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+</file>
+
+</files>

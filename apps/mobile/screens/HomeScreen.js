@@ -1,99 +1,321 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Alert, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { getTransactions, getSummary } from '../services/api';
+import { useSummary, useTransactions } from '../services/queries';
+import AddTransactionModal from '../components/AddTransactionModal';
+import { COLORS, SIZES } from '../constants/theme';
 
 export default function HomeScreen() {
-  const [refreshing, setRefreshing] = useState(false);
-  const [summary, setSummary] = useState({ balance: 0, total_income: 0, total_expense: 0 });
-  const [transactions, setTransactions] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  
+  const { data: summaryData, isLoading: loadingSummary, refetch: refetchSummary, isRefetching: refetchingSummary } = useSummary();
+  const { data: transactionsData, isLoading: loadingTransactions, refetch: refetchTransactions, isRefetching: refetchingTransactions } = useTransactions();
 
-  const fetchData = async () => {
-    const summaryData = await getSummary();
-    const transactionsData = await getTransactions();
-    
-    setSummary(summaryData);
-    setTransactions(transactionsData);
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const summary = summaryData || { balance: 0, total_income: 0, total_expense: 0 };
+  const transactions = transactionsData || [];
+  
+  const refreshing = refetchingSummary || refetchingTransactions;
 
   const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchData();
-    setRefreshing(false);
+    await Promise.all([refetchSummary(), refetchTransactions()]);
   };
 
+  const handleAIAssistant = () => {
+    Alert.alert(
+      'AI Financial Assistant 🤖',
+      'Based on your recent transactions, you spent $9.00 on Food (Coffee). Your budget is healthy!',
+      [{ text: 'Got it!' }]
+    );
+  };
+
+  if (loadingSummary || loadingTransactions) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: COLORS.textSecondary }}>Loading your finances...</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#09090B' }}>
+    <View style={styles.container}>
       <ScrollView 
-        contentContainerStyle={{ padding: 20, paddingTop: 60 }}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
         }
       >
         {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <View style={styles.header}>
           <View>
-            <Text style={{ color: '#A1A1AA', fontSize: 14 }}>Welcome back,</Text>
-            <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: 'bold' }}>Montra User</Text>
+            <Text style={styles.greetingText}>Welcome back,</Text>
+            <Text style={styles.userName}>Montra User</Text>
           </View>
-          <TouchableOpacity style={{ backgroundColor: '#18181B', padding: 10, borderRadius: 12 }}>
-            <Feather name="bell" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={handleAIAssistant} style={styles.iconButtonPrimary}>
+              <Feather name="cpu" size={20} color={COLORS.primaryLight} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.iconButton}>
+              <Feather name="bell" size={20} color={COLORS.text} />
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* AI Insight Banner */}
+        <TouchableOpacity onPress={handleAIAssistant} style={styles.aiBanner}>
+          <View style={styles.aiIconContainer}>
+            <Feather name="zap" size={18} color={COLORS.text} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.aiBannerTitle}>AI Smart Insight</Text>
+            <Text style={styles.aiBannerText}>Tap to analyze your $9.00 coffee spending habit.</Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={COLORS.textSecondary} />
+        </TouchableOpacity>
 
         {/* Total Balance Card */}
-        <View style={{ backgroundColor: '#6366F1', borderRadius: 24, padding: 20, marginBottom: 24 }}>
-          <Text style={{ color: '#C7D2FE', fontSize: 14, marginBottom: 8 }}>Total Balance</Text>
-          <Text style={{ color: '#FFFFFF', fontSize: 32, fontWeight: 'bold', marginBottom: 20 }}>
-            ${summary.balance.toFixed(2)}
-          </Text>
+        <View style={styles.balanceCard}>
+          <Text style={styles.balanceLabel}>Total Balance</Text>
+          <Text style={styles.balanceAmount}>${summary.balance.toFixed(2)}</Text>
           
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 16, padding: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Feather name="arrow-down-left" size={20} color="#4ADE80" />
+          <View style={styles.balanceStats}>
+            <View style={styles.statItem}>
+              <Feather name="arrow-down-left" size={20} color={COLORS.success} />
               <View style={{ marginLeft: 8 }}>
-                <Text style={{ color: '#E0E7FF', fontSize: 12 }}>Income</Text>
-                <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>${summary.total_income.toFixed(2)}</Text>
+                <Text style={styles.statLabel}>Income</Text>
+                <Text style={styles.statValue}>${summary.total_income.toFixed(2)}</Text>
               </View>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Feather name="arrow-up-right" size={20} color="#F87171" />
+            <View style={styles.statItem}>
+              <Feather name="arrow-up-right" size={20} color={COLORS.danger} />
               <View style={{ marginLeft: 8 }}>
-                <Text style={{ color: '#E0E7FF', fontSize: 12 }}>Expenses</Text>
-                <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>${summary.total_expense.toFixed(2)}</Text>
+                <Text style={styles.statLabel}>Expenses</Text>
+                <Text style={styles.statValue}>${summary.total_expense.toFixed(2)}</Text>
               </View>
             </View>
           </View>
         </View>
 
-        {/* Recent Transactions List */}
-        <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Recent Transactions</Text>
+        {/* Recent Transactions Header */}
+        <View style={styles.transactionsHeader}>
+          <Text style={styles.transactionsTitle}>Recent Transactions</Text>
+          <TouchableOpacity onPress={() => setModalVisible(true)}>
+            <Text style={styles.addBtnText}>+ Add New</Text>
+          </TouchableOpacity>
+        </View>
         
+        {/* Transactions List */}
         {transactions.length === 0 ? (
-          <Text style={{ color: '#A1A1AA', textAlign: 'center', marginTop: 20 }}>No transactions found</Text>
+          <Text style={styles.emptyText}>No transactions found</Text>
         ) : (
           transactions.map((item) => (
-            <View key={item.id} style={{ backgroundColor: '#18181B', borderRadius: 16, padding: 16, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View style={{ backgroundColor: '#27272A', padding: 12, borderRadius: 12, marginRight: 12 }}>
-                  <Feather name={item.type === 'income' ? 'arrow-down-left' : 'arrow-up-right'} size={20} color={item.type === 'income' ? '#4ADE80' : '#F87171'} />
+            <View key={item.id} style={styles.txItem}>
+              <View style={styles.txLeft}>
+                <View style={styles.txIconContainer}>
+                  <Feather 
+                    name={item.type === 'income' ? 'arrow-down-left' : 'arrow-up-right'} 
+                    size={20} 
+                    color={item.type === 'income' ? COLORS.success : COLORS.danger} 
+                  />
                 </View>
                 <View>
-                  <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 16 }}>{item.title}</Text>
-                  <Text style={{ color: '#A1A1AA', fontSize: 12 }}>{item.category}</Text>
+                  <Text style={styles.txTitle}>{item.title}</Text>
+                  <Text style={styles.txCategory}>{item.category}</Text>
                 </View>
               </View>
-              <Text style={{ color: item.type === 'income' ? '#4ADE80' : '#FFFFFF', fontWeight: 'bold', fontSize: 16 }}>
+              <Text style={[styles.txAmount, { color: item.type === 'income' ? COLORS.success : COLORS.text }]}>
                 {item.type === 'income' ? '+' : '-'}${item.amount.toFixed(2)}
               </Text>
             </View>
           ))
         )}
       </ScrollView>
+
+      {/* Floating Action Button (FAB) */}
+      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+        <Feather name="plus" size={28} color={COLORS.text} />
+      </TouchableOpacity>
+
+      {/* Modal */}
+      <AddTransactionModal 
+        visible={modalVisible} 
+        onClose={() => setModalVisible(false)} 
+      />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    padding: SIZES.padding,
+    paddingTop: 60,
+    paddingBottom: 100,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  greetingText: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.sm,
+  },
+  userName: {
+    color: COLORS.text,
+    fontSize: SIZES.xl,
+    fontWeight: 'bold',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  iconButton: {
+    backgroundColor: COLORS.card,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.cardAlt,
+  },
+  iconButtonPrimary: {
+    backgroundColor: COLORS.primaryBg,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  aiBanner: {
+    backgroundColor: COLORS.card,
+    borderRadius: SIZES.radius,
+    padding: 14,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  aiIconContainer: {
+    backgroundColor: COLORS.primary,
+    padding: 8,
+    borderRadius: 10,
+  },
+  aiBannerTitle: {
+    color: COLORS.text,
+    fontWeight: '600',
+    fontSize: SIZES.sm,
+  },
+  aiBannerText: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.xs,
+  },
+  balanceCard: {
+    backgroundColor: COLORS.primary,
+    borderRadius: SIZES.radiusLg,
+    padding: SIZES.padding,
+    marginBottom: 24,
+  },
+  balanceLabel: {
+    color: COLORS.textInverse,
+    fontSize: SIZES.sm,
+    marginBottom: 8,
+  },
+  balanceAmount: {
+    color: COLORS.text,
+    fontSize: SIZES.xxl,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  balanceStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: SIZES.radius,
+    padding: 12,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statLabel: {
+    color: COLORS.textInverse,
+    fontSize: SIZES.xs,
+  },
+  statValue: {
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  transactionsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  transactionsTitle: {
+    color: COLORS.text,
+    fontSize: SIZES.lg,
+    fontWeight: 'bold',
+  },
+  addBtnText: {
+    color: COLORS.primaryLight,
+    fontWeight: '600',
+    fontSize: SIZES.sm,
+  },
+  emptyText: {
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  txItem: {
+    backgroundColor: COLORS.card,
+    borderRadius: SIZES.radius,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  txLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  txIconContainer: {
+    backgroundColor: COLORS.cardAlt,
+    padding: 12,
+    borderRadius: 12,
+    marginRight: 12,
+  },
+  txTitle: {
+    color: COLORS.text,
+    fontWeight: '600',
+    fontSize: SIZES.md,
+  },
+  txCategory: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.xs,
+  },
+  txAmount: {
+    fontWeight: 'bold',
+    fontSize: SIZES.md,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    backgroundColor: COLORS.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+  },
+});
