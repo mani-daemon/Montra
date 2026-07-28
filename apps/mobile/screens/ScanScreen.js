@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import InsightModal from '../components/InsightModal';
+import { COLORS, SIZES } from '../constants/theme';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function ScanScreen() {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [insightVisible, setInsightVisible] = useState(false);
+  const { currency } = useCurrency();
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -25,11 +30,7 @@ export default function ScanScreen() {
 
     setTimeout(() => {
       setLoading(false);
-      Alert.alert(
-        "✨ AI Analysis Complete",
-        "Store: Walmart\nDate: Today\nTotal Amount: $42.50\nCategory: Grocery",
-        [{ text: "Save Transaction", onPress: () => setImage(null) }]
-      );
+      setInsightVisible(true);
     }, 2000);
   };
 
@@ -43,7 +44,7 @@ export default function ScanScreen() {
           <Image source={{ uri: image }} style={styles.previewImage} />
         ) : (
           <View style={styles.placeholderBox}>
-            <Ionicons name="document-text-outline" size={60} color="#7F3DFF" />
+            <Feather name="file-text" size={60} color={COLORS.primaryLight} />
             <Text style={styles.placeholderText}>No receipt selected</Text>
           </View>
         )}
@@ -51,7 +52,7 @@ export default function ScanScreen() {
 
       <View style={styles.actionsContainer}>
         <TouchableOpacity style={styles.secondaryButton} onPress={pickImage}>
-          <Ionicons name="images-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+          <Feather name="image" size={20} color={COLORS.text} style={{ marginRight: 8 }} />
           <Text style={styles.secondaryButtonText}>Choose from Gallery</Text>
         </TouchableOpacity>
 
@@ -62,30 +63,49 @@ export default function ScanScreen() {
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={COLORS.text} />
             ) : (
               <>
-                <Ionicons name="sparkles" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Feather name="cpu" size={20} color={COLORS.text} style={{ marginRight: 8 }} />
                 <Text style={styles.primaryButtonText}>Analyze with AI</Text>
               </>
             )}
           </TouchableOpacity>
         )}
       </View>
+
+      <InsightModal
+        visible={insightVisible}
+        onClose={() => setInsightVisible(false)}
+        title="✨ AI Analysis Complete"
+        message={`Store: Walmart\nDate: Today\nTotal Amount: ${currency.symbol}42.50\nCategory: Grocery`}
+        actions={[
+          {
+            text: 'Save Transaction',
+            primary: true,
+            onPress: () => setImage(null),
+          },
+          {
+            text: 'Cancel',
+            primary: false,
+            onPress: () => {},
+          }
+        ]}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#09090E', paddingTop: 60, paddingHorizontal: 20 },
-  headerTitle: { color: '#FFFFFF', fontSize: 24, fontWeight: 'bold' },
-  subtitle: { color: '#8F90A6', fontSize: 14, marginTop: 6, marginBottom: 24 },
+  container: { flex: 1, backgroundColor: COLORS.background, paddingTop: 60, paddingHorizontal: 20 },
+  headerTitle: { color: COLORS.text, fontSize: 24, fontWeight: 'bold' },
+  subtitle: { color: COLORS.textSecondary, fontSize: 14, marginTop: 6, marginBottom: 24 },
   uploadCard: {
     height: 320,
-    backgroundColor: '#1E1E2D',
+    backgroundColor: COLORS.card,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#2D2D3D',
+    borderColor: COLORS.border,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -94,24 +114,24 @@ const styles = StyleSheet.create({
   },
   previewImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   placeholderBox: { alignItems: 'center' },
-  placeholderText: { color: '#8F90A6', fontSize: 15, marginTop: 12 },
+  placeholderText: { color: COLORS.textSecondary, fontSize: 15, marginTop: 12 },
   actionsContainer: { gap: 12 },
   secondaryButton: {
-    backgroundColor: '#2D2D3D',
+    backgroundColor: COLORS.cardAlt,
     borderRadius: 14,
     paddingVertical: 14,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  secondaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  secondaryButtonText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   primaryButton: {
-    backgroundColor: '#7F3DFF',
+    backgroundColor: COLORS.primary,
     borderRadius: 14,
     paddingVertical: 14,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  primaryButtonText: { color: COLORS.text, fontSize: 16, fontWeight: 'bold' },
 });

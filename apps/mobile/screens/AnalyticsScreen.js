@@ -5,10 +5,12 @@ import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { useSummary, useTransactions } from '../services/queries';
 import { CATEGORIES, getCategoryColor } from '../constants/categories';
 import { COLORS, SIZES } from '../constants/theme';
+import { useCurrency } from '../context/CurrencyContext';
 
 const { width } = Dimensions.get('window');
 
 export default function AnalyticsScreen() {
+  const { currency } = useCurrency();
   const { data: summaryData, isLoading: loadingSummary, refetch: refetchSummary, isRefetching: refetchingSummary } = useSummary();
   const { data: transactions, isLoading: loadingTransactions, refetch: refetchTransactions, isRefetching: refetchingTransactions } = useTransactions();
 
@@ -29,7 +31,7 @@ export default function AnalyticsScreen() {
       frontColor: COLORS.success,
       topLabelComponent: () => (
         <Text style={{ color: COLORS.success, fontSize: 11, fontWeight: 'bold', marginBottom: 4 }}>
-          ${summary.total_income}
+          {currency.symbol}{summary.total_income}
         </Text>
       ),
     },
@@ -39,7 +41,7 @@ export default function AnalyticsScreen() {
       frontColor: COLORS.danger,
       topLabelComponent: () => (
         <Text style={{ color: COLORS.danger, fontSize: 11, fontWeight: 'bold', marginBottom: 4 }}>
-          ${summary.total_expense}
+          {currency.symbol}{summary.total_expense}
         </Text>
       ),
     },
@@ -115,7 +117,7 @@ export default function AnalyticsScreen() {
                   return (
                     <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                       <Text style={{ fontSize: 18, color: COLORS.text, fontWeight: 'bold' }}>
-                        ${summary.total_expense.toFixed(0)}
+                        {currency.symbol}{summary.total_expense.toFixed(0)}
                       </Text>
                       <Text style={{ fontSize: 11, color: COLORS.textSecondary }}>Spent</Text>
                     </View>
@@ -129,7 +131,7 @@ export default function AnalyticsScreen() {
                   <View key={item.text} style={styles.legendItem}>
                     <View style={[styles.colorDot, { backgroundColor: item.color }]} />
                     <Text style={styles.legendText}>{item.text}</Text>
-                    <Text style={styles.legendValue}>${item.value.toFixed(2)}</Text>
+                    <Text style={styles.legendValue}>{currency.symbol}{item.value.toFixed(2)}</Text>
                   </View>
                 ))}
               </View>

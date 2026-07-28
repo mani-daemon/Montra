@@ -13,12 +13,14 @@ import { Feather } from '@expo/vector-icons';
 import { useCreateTransaction } from '../services/queries';
 import { CATEGORIES } from '../constants/categories';
 import { COLORS, SIZES } from '../constants/theme';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function AddTransactionModal({ visible, onClose }) {
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('expense'); // 'expense' or 'income'
   const [category, setCategory] = useState(CATEGORIES[0].label);
+  const { currency } = useCurrency();
   
   const createTxMutation = useCreateTransaction();
 
@@ -112,7 +114,7 @@ export default function AddTransactionModal({ visible, onClose }) {
           />
 
           {/* Amount Input */}
-          <Text style={styles.label}>Amount ($)</Text>
+          <Text style={styles.label}>Amount ({currency.symbol})</Text>
           <TextInput
             style={styles.input}
             placeholder="0.00"

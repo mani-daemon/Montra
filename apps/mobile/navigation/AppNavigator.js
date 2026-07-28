@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { COLORS } from '../constants/theme';
 
 import HomeScreen from '../screens/HomeScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
@@ -17,31 +18,31 @@ export default function AppNavigator() {
         headerShown: false,
         tabBarShowLabel: true,
         tabBarStyle: {
-          backgroundColor: '#18181B',
-          borderTopColor: '#27272A',
+          backgroundColor: COLORS.card,
+          borderTopColor: COLORS.border,
           borderTopWidth: 1,
           height: 65,
           paddingBottom: 10,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#6366F1',
-        tabBarInactiveTintColor: '#A1A1AA',
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textSecondary,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
           if (route.name === 'Home') {
-            iconName = focused ? 'wallet' : 'wallet-outline';
+            iconName = 'home';
           } else if (route.name === 'Analytics') {
-            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+            iconName = 'pie-chart';
           } else if (route.name === 'Scan') {
-            iconName = focused ? 'scan' : 'scan-outline';
+            iconName = 'camera';
           } else if (route.name === 'AI Assistant') {
-            iconName = focused ? 'sparkles' : 'sparkles-outline';
+            iconName = 'cpu';
           } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
+            iconName = 'user';
           }
 
-          return <Ionicons name={iconName} size={22} color={color} />;
+          return <Feather name={iconName} size={22} color={color} />;
         },
       })}
     >

@@ -10,6 +10,7 @@ import LoginScreen from './screens/LoginScreen';
 import { getToken } from './services/authClient';
 import { globalEvents } from './services/eventEmitter';
 import { COLORS } from './constants/theme';
+import { CurrencyProvider } from './context/CurrencyContext';
 
 const queryClient = new QueryClient();
 const Stack = createNativeStackNavigator();
@@ -52,20 +53,22 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {isAuthenticated ? (
-            <Stack.Screen name="MainApp" component={AppNavigator} />
-          ) : (
-            <>
-              <Stack.Screen name="Welcome" component={WelcomeScreen} />
-              <Stack.Screen name="Login">
-                {props => <LoginScreen {...props} signIn={() => setIsAuthenticated(true)} />}
-              </Stack.Screen>
-            </>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
+      <CurrencyProvider>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {isAuthenticated ? (
+              <Stack.Screen name="MainApp" component={AppNavigator} />
+            ) : (
+              <>
+                <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                <Stack.Screen name="Login">
+                  {props => <LoginScreen {...props} signIn={() => setIsAuthenticated(true)} />}
+                </Stack.Screen>
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </CurrencyProvider>
     </QueryClientProvider>
   );
 }

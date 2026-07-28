@@ -4,8 +4,11 @@ import { Feather } from '@expo/vector-icons';
 import { clearToken } from '../services/authClient';
 import { globalEvents } from '../services/eventEmitter';
 import { COLORS, SIZES } from '../constants/theme';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function ProfileScreen() {
+  const { currency, toggleCurrency } = useCurrency();
+
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -41,14 +44,14 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
           
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={toggleCurrency}>
             <View style={styles.menuLeft}>
               <Feather name="dollar-sign" size={20} color={COLORS.primaryLight} />
               <Text style={styles.menuText}>Currency</Text>
             </View>
             <View style={styles.menuRight}>
-              <Text style={styles.menuValue}>USD ($)</Text>
-              <Feather name="chevron-right" size={18} color={COLORS.textSecondary} />
+              <Text style={styles.menuValue}>{currency.code} ({currency.symbol})</Text>
+              <Feather name="refresh-cw" size={16} color={COLORS.primaryLight} />
             </View>
           </TouchableOpacity>
 
