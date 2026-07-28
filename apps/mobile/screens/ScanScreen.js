@@ -70,12 +70,13 @@ export default function ScanScreen() {
 
   return (
     <View style={styles.container}>
-      <CameraView 
-        style={styles.camera} 
-        ref={cameraRef}
-        flash={flash}
-        facing="back"
-      >
+      <View style={{ flex: 1 }}>
+        <CameraView 
+          style={StyleSheet.absoluteFillObject} 
+          ref={cameraRef}
+          flash={flash}
+          facing="back"
+        />
         {/* Top Header Controls */}
         <View style={styles.headerControls}>
           <TouchableOpacity style={styles.headerButton} onPress={toggleFlash}>
@@ -101,7 +102,7 @@ export default function ScanScreen() {
           onCapture={handleCapture}
           onPickGallery={handleGalleryPick}
         />
-      </CameraView>
+      </View>
 
       {/* Review & Edit Modal */}
       <ReceiptReviewModal

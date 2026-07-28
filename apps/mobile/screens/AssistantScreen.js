@@ -10,7 +10,7 @@ import {
   Platform,
   ActivityIndicator 
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../constants/theme';
 
 export default function AssistantScreen() {
