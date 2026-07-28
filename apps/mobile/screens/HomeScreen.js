@@ -1,118 +1,99 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { getTransactions, getSummary } from '../services/api';
 
 export default function HomeScreen() {
-  const [balance, setBalance] = useState(7650.20);
-  const [transactions, setTransactions] = useState([
-    { id: '1', title: 'Salary', amount: '+$3,000', type: 'income' },
-    { id: '2', title: 'Grocery Store', amount: '-$120', type: 'expense' },
-    { id: '3', title: 'Coffee Shop', amount: '-$5', type: 'expense' },
-  ]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [summary, setSummary] = useState({ balance: 0, total_income: 0, total_expense: 0 });
+  const [transactions, setTransactions] = useState([]);
+
+  const fetchData = async () => {
+    const summaryData = await getSummary();
+    const transactionsData = await getTransactions();
+    
+    setSummary(summaryData);
+    setTransactions(transactionsData);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.greeting}>Welcome back,</Text>
-        <Text style={styles.headerTitle}>Montra Wallet</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Total Balance</Text>
-        <Text style={styles.balanceAmount}>${balance.toFixed(2)}</Text>
-        <TouchableOpacity style={styles.button} onPress={() => setBalance(balance + 100)}>
-          <Text style={styles.buttonText}>+ Quick Income ($100)</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.sectionTitle}>Recent Transactions</Text>
-
-      {transactions.map((item) => (
-        <View key={item.id} style={styles.transactionCard}>
-          <Text style={styles.transTitle}>{item.title}</Text>
-          <Text style={[
-            styles.transAmount, 
-            { color: item.type === 'income' ? '#00A86B' : '#FF4D4D' }
-          ]}>
-            {item.amount}
-          </Text>
+    <View style={{ flex: 1, backgroundColor: '#09090B' }}>
+      <ScrollView 
+        contentContainerStyle={{ padding: 20, paddingTop: 60 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" />
+        }
+      >
+        {/* Header */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <View>
+            <Text style={{ color: '#A1A1AA', fontSize: 14 }}>Welcome back,</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: 'bold' }}>Montra User</Text>
+          </View>
+          <TouchableOpacity style={{ backgroundColor: '#18181B', padding: 10, borderRadius: 12 }}>
+            <Feather name="bell" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
-      ))}
-    </ScrollView>
+
+        {/* Total Balance Card */}
+        <View style={{ backgroundColor: '#6366F1', borderRadius: 24, padding: 20, marginBottom: 24 }}>
+          <Text style={{ color: '#C7D2FE', fontSize: 14, marginBottom: 8 }}>Total Balance</Text>
+          <Text style={{ color: '#FFFFFF', fontSize: 32, fontWeight: 'bold', marginBottom: 20 }}>
+            ${summary.balance.toFixed(2)}
+          </Text>
+          
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 16, padding: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Feather name="arrow-down-left" size={20} color="#4ADE80" />
+              <View style={{ marginLeft: 8 }}>
+                <Text style={{ color: '#E0E7FF', fontSize: 12 }}>Income</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>${summary.total_income.toFixed(2)}</Text>
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Feather name="arrow-up-right" size={20} color="#F87171" />
+              <View style={{ marginLeft: 8 }}>
+                <Text style={{ color: '#E0E7FF', fontSize: 12 }}>Expenses</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>${summary.total_expense.toFixed(2)}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Recent Transactions List */}
+        <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Recent Transactions</Text>
+        
+        {transactions.length === 0 ? (
+          <Text style={{ color: '#A1A1AA', textAlign: 'center', marginTop: 20 }}>No transactions found</Text>
+        ) : (
+          transactions.map((item) => (
+            <View key={item.id} style={{ backgroundColor: '#18181B', borderRadius: 16, padding: 16, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ backgroundColor: '#27272A', padding: 12, borderRadius: 12, marginRight: 12 }}>
+                  <Feather name={item.type === 'income' ? 'arrow-down-left' : 'arrow-up-right'} size={20} color={item.type === 'income' ? '#4ADE80' : '#F87171'} />
+                </View>
+                <View>
+                  <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 16 }}>{item.title}</Text>
+                  <Text style={{ color: '#A1A1AA', fontSize: 12 }}>{item.category}</Text>
+                </View>
+              </View>
+              <Text style={{ color: item.type === 'income' ? '#4ADE80' : '#FFFFFF', fontWeight: 'bold', fontSize: 16 }}>
+                {item.type === 'income' ? '+' : '-'}${item.amount.toFixed(2)}
+              </Text>
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#09090E',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-  },
-  header: {
-    marginBottom: 20,
-  },
-  greeting: {
-    color: '#8F90A6',
-    fontSize: 14,
-  },
-  headerTitle: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  card: {
-    backgroundColor: '#1E1E2D',
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#2D2D3D',
-    marginBottom: 28,
-  },
-  cardTitle: {
-    color: '#8F90A6',
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  balanceAmount: {
-    color: '#FFFFFF',
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#7F3DFF',
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  sectionTitle: {
-    color: '#8F90A6',
-    fontSize: 16,
-    marginBottom: 16,
-  },
-  transactionCard: {
-    backgroundColor: '#1E1E2D',
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#2D2D3D',
-  },
-  transTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  transAmount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
