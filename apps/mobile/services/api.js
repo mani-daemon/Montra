@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getToken, clearToken } from './authClient';
 import { globalEvents } from './eventEmitter';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.48:8000';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.48:8005';
 
 const api = axios.create({
   baseURL: BASE_URL,
