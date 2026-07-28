@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useSummary, useTransactions } from '../services/queries';
+import * as Haptics from 'expo-haptics';
+import { useSummary, useTransactions, useInsight } from '../services/queries';
 import AddTransactionModal from '../components/AddTransactionModal';
 import InsightModal from '../components/InsightModal';
 import TransactionRow from '../components/TransactionRow';
@@ -15,21 +16,28 @@ export default function HomeScreen() {
   
   const { data: summaryData, isLoading: loadingSummary, refetch: refetchSummary, isRefetching: refetchingSummary } = useSummary();
   const { data: transactionsData, isLoading: loadingTransactions, refetch: refetchTransactions, isRefetching: refetchingTransactions } = useTransactions();
+  const { data: insightData, refetch: refetchInsight } = useInsight();
 
   const summary = summaryData || { balance: 0, total_income: 0, total_expense: 0 };
   const transactions = transactionsData || [];
+  const currentInsight = insightData?.insight || `Tap to analyze your spending habits.`;
   
   const refreshing = refetchingSummary || refetchingTransactions;
 
   const onRefresh = useCallback(async () => {
-    await Promise.all([refetchSummary(), refetchTransactions()]);
-  }, [refetchSummary, refetchTransactions]);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await Promise.all([refetchSummary(), refetchTransactions(), refetchInsight()]);
+  }, [refetchSummary, refetchTransactions, refetchInsight]);
 
   const handleAIAssistant = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setInsightVisible(true);
   }, []);
 
-  const openAddModal = useCallback(() => setModalVisible(true), []);
+  const openAddModal = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setModalVisible(true);
+  }, []);
   const closeAddModal = useCallback(() => setModalVisible(false), []);
 
   const renderHeader = () => (
@@ -58,7 +66,7 @@ export default function HomeScreen() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.aiBannerTitle}>AI Smart Insight</Text>
-          <Text style={styles.aiBannerText}>Tap to analyze your {currency.symbol}9.00 coffee spending habit.</Text>
+          <Text style={styles.aiBannerText} numberOfLines={1}>{currentInsight}</Text>
         </View>
         <Feather name="chevron-right" size={18} color={COLORS.textSecondary} />
       </TouchableOpacity>
@@ -138,7 +146,7 @@ export default function HomeScreen() {
         visible={insightVisible}
         onClose={() => setInsightVisible(false)}
         title="AI Financial Assistant"
-        message={`Based on your recent transactions, you spent ${currency.symbol}9.00 on Food (Coffee). Your budget is healthy!`}
+        message={currentInsight}
       />
     </View>
   );

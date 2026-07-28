@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -17,7 +17,7 @@ class TransactionModel(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
-    amount = Column(Float)
+    amount = Column(Integer) # stored in cents to prevent rounding errors
     type = Column(String)  # 'income' or 'expense'
     category = Column(String, default="General")
     created_at = Column(DateTime, default=datetime.utcnow)

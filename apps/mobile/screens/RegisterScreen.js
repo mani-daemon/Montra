@@ -1,31 +1,32 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
-import { saveToken } from '../services/authClient';
-
+import { registerUser } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-export default function LoginScreen({ navigation }) {
+export default function RegisterScreen({ navigation }) {
   const { login } = useAuth();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password.');
+  const handleRegister = async () => {
+    if (!name || !email || !password) {
+      Alert.alert('Error', 'Please fill in all fields.');
       return;
     }
 
     setLoading(true);
     try {
+      await registerUser(name, email, password);
+      // Automatically log them in
       await login(email, password);
-      // navigation or state update happens via Context in App.js
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Registration error:', error);
       Alert.alert(
-        'Login Failed', 
-        error.response?.data?.detail || error.message || 'Incorrect email or password.'
+        'Registration Failed', 
+        error.response?.data?.detail || 'An error occurred during registration.'
       );
     } finally {
       setLoading(false);
@@ -34,7 +35,16 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+      <Text style={styles.title}>Sign Up</Text>
+
+      <Text style={styles.label}>Full Name</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="John Doe"
+        placeholderTextColor={COLORS.textMuted}
+        value={name}
+        onChangeText={setName}
+      />
       
       <Text style={styles.label}>Email</Text>
       <TextInput
@@ -55,21 +65,31 @@ export default function LoginScreen({ navigation }) {
         value={password}
         onChangeText={setPassword}
       />
+      
+      {/* Password Strength Indicator */}
+      {password.length > 0 && (
+        <View style={styles.strengthContainer}>
+          <View style={[styles.strengthBar, { backgroundColor: password.length < 6 ? '#FD3C4A' : password.length < 10 ? '#FDB623' : '#00A86B', width: `${Math.min(100, password.length * 10)}%` }]} />
+          <Text style={styles.strengthText}>
+            {password.length < 6 ? 'Weak' : password.length < 10 ? 'Fair' : 'Strong'}
+          </Text>
+        </View>
+      )}
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+      <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
         {loading ? (
           <ActivityIndicator color={COLORS.card} />
         ) : (
-          <Text style={styles.buttonText}>Sign In</Text>
+          <Text style={styles.buttonText}>Create Account</Text>
         )}
       </TouchableOpacity>
 
       <TouchableOpacity 
-        style={styles.signupContainer} 
-        onPress={() => navigation.navigate('Register')}
+        style={styles.loginContainer} 
+        onPress={() => navigation.navigate('Login')}
       >
-        <Text style={styles.signupText}>
-          Don't have an account? <Text style={styles.signupBold}>Sign Up</Text>
+        <Text style={styles.loginText}>
+          Already have an account? <Text style={styles.loginBold}>Sign In</Text>
         </Text>
       </TouchableOpacity>
     </View>
@@ -110,22 +130,39 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: SIZES.radius,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 10,
+  },
+  strengthContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: -10,
+  },
+  strengthBar: {
+    height: 4,
+    borderRadius: 2,
+    flex: 1,
+    marginRight: 10,
+  },
+  strengthText: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    width: 40,
   },
   buttonText: {
     color: COLORS.text,
     fontSize: SIZES.md,
     fontWeight: 'bold',
   },
-  signupContainer: {
+  loginContainer: {
     marginTop: 30,
     alignItems: 'center',
   },
-  signupText: {
+  loginText: {
     color: COLORS.textSecondary,
     fontSize: SIZES.md,
   },
-  signupBold: {
+  loginBold: {
     color: COLORS.primaryLight,
     fontWeight: 'bold',
   },

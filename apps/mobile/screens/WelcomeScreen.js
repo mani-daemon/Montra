@@ -10,8 +10,11 @@ export default function WelcomeScreen({ navigation }) {
         <Text style={styles.subtitle}>Your AI-powered personal finance companion.</Text>
       </View>
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Register')}>
           <Text style={styles.buttonText}>Get Started</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.loginButtonText}>Log In</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -53,6 +56,18 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: COLORS.text,
+    fontSize: SIZES.md,
+    fontWeight: 'bold',
+  },
+  loginButton: {
+    backgroundColor: COLORS.cardAlt,
+    paddingVertical: 16,
+    borderRadius: SIZES.radius,
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  loginButtonText: {
+    color: COLORS.textSecondary,
     fontSize: SIZES.md,
     fontWeight: 'bold',
   },

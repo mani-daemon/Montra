@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, ScrollView, RefreshControl, StyleSheet, Dimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
@@ -24,7 +24,7 @@ export default function AnalyticsScreen() {
   };
 
   // 1. Prepare Bar Chart Data
-  const barData = [
+  const barData = useMemo(() => [
     {
       value: summary.total_income,
       label: 'Income',
@@ -45,20 +45,22 @@ export default function AnalyticsScreen() {
         </Text>
       ),
     },
-  ];
+  ], [summary.total_income, summary.total_expense, currency.symbol]);
 
   // 2. Prepare Pie Chart Data
-  const expenses = txs.filter((t) => t.type === 'expense');
-  const totals = {};
-  expenses.forEach((t) => {
-    totals[t.category] = (totals[t.category] || 0) + t.amount;
-  });
+  const pieData = useMemo(() => {
+    const expenses = txs.filter((t) => t.type === 'expense');
+    const totals = {};
+    expenses.forEach((t) => {
+      totals[t.category] = (totals[t.category] || 0) + t.amount;
+    });
 
-  const pieData = Object.keys(totals).map((cat) => ({
-    value: totals[cat],
-    color: getCategoryColor(cat),
-    text: cat,
-  }));
+    return Object.keys(totals).map((cat) => ({
+      value: totals[cat],
+      color: getCategoryColor(cat),
+      text: cat,
+    }));
+  }, [txs]);
 
   if (loadingSummary || loadingTransactions) {
     return (

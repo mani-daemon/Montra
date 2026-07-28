@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useCreateTransaction } from '../../services/queries';
+import { uploadReceipt } from '../../services/api';
 import { CATEGORIES } from '../../constants/categories';
 import { COLORS, SIZES } from '../../constants/theme';
 import { useCurrency } from '../../context/CurrencyContext';
@@ -21,22 +22,48 @@ export default function ReceiptReviewModal({ visible, imageUri, onClose }) {
   const [loading, setLoading] = useState(true);
   const [merchant, setMerchant] = useState('');
   const [amount, setAmount] = useState('');
+  const [confidence, setConfidence] = useState(100);
   const [category, setCategory] = useState(CATEGORIES[1].label); // Default to Food for demo
   const { currency } = useCurrency();
   const createTxMutation = useCreateTransaction();
 
-  // Simulate AI Processing
+  // Call real AI API
   useEffect(() => {
-    if (visible && imageUri) {
+    let mounted = true;
+    
+    const analyzeImage = async () => {
+      if (!imageUri) return;
+      
       setLoading(true);
-      const timer = setTimeout(() => {
-        setMerchant('Starbucks Coffee');
-        setAmount('12.50');
-        setCategory('Food & Dining');
-        setLoading(false);
-      }, 2500);
-      return () => clearTimeout(timer);
+      try {
+        const result = await uploadReceipt(imageUri);
+        if (mounted) {
+          setMerchant(result.merchant_name || result.title);
+          setAmount(String(result.total_amount || result.amount));
+          setConfidence(result.confidence || 100);
+          if (result.category) setCategory(result.category);
+        }
+      } catch (error) {
+        if (mounted) {
+          console.error("OCR Error:", error);
+          // Fallback if AI fails so user can still manually enter
+          setMerchant('');
+          setAmount('');
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    if (visible && imageUri) {
+      analyzeImage();
     }
+    
+    return () => {
+      mounted = false;
+    };
   }, [visible, imageUri]);
 
   const handleSave = () => {
@@ -89,6 +116,13 @@ export default function ReceiptReviewModal({ visible, imageUri, onClose }) {
               </View>
             ) : (
               <>
+                {confidence < 80 && (
+                  <View style={styles.warningBox}>
+                    <Feather name="alert-triangle" size={20} color="#FDB623" />
+                    <Text style={styles.warningText}>Low confidence scan. Please verify the extracted values.</Text>
+                  </View>
+                )}
+                
                 <View style={styles.fieldGroup}>
                   <Text style={styles.label}>Merchant</Text>
                   <View style={styles.inputWrapper}>
@@ -203,6 +237,22 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: SIZES.sm,
     marginTop: 4,
+  },
+  warningBox: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(253, 182, 35, 0.1)',
+    padding: 12,
+    borderRadius: SIZES.radius,
+    marginBottom: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(253, 182, 35, 0.3)',
+  },
+  warningText: {
+    color: '#FDB623',
+    fontSize: 13,
+    marginLeft: 8,
+    flex: 1,
   },
   fieldGroup: {
     marginBottom: 16,

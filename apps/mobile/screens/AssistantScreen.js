@@ -11,6 +11,8 @@ import {
   ActivityIndicator 
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { sendChatMessage } from '../services/api';
 import { COLORS, SIZES } from '../constants/theme';
 
 export default function AssistantScreen() {
@@ -18,6 +20,7 @@ export default function AssistantScreen() {
     {
       id: '1',
       sender: 'ai',
+      type: 'text',
       text: "Hello! 👋 I'm your Montra Financial Assistant. Ask me anything about your balance, spending habits, or budget goals.",
     },
   ]);
@@ -31,28 +34,36 @@ export default function AssistantScreen() {
     "☕ Show my coffee expenses",
   ];
 
-  const handleSend = (textToSend) => {
+  const handleSend = async (textToSend) => {
     const messageContent = textToSend || inputText;
     if (!messageContent.trim()) return;
 
-    // ۱. اضافه کردن پیام کاربر
-    const userMsg = { id: Date.now().toString(), sender: 'user', text: messageContent };
+    // 1. Add user message
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const userMsg = { id: Date.now().toString(), sender: 'user', type: 'text', text: messageContent };
     setMessages((prev) => [...prev, userMsg]);
     if (!textToSend) setInputText('');
     setIsTyping(true);
 
-    // ۲. شبیه‌سازی پاسخ هوش مصنوعی
-    setTimeout(() => {
-      let aiResponseText = "I analyzed your recent transactions. You spent $125 on groceries and $15 on coffee this week. You're well within your $500 monthly budget!";
-      
-      if (messageContent.includes("tips") || messageContent.includes("save")) {
-        aiResponseText = "💡 Here are 3 quick tips:\n1. Limit food delivery to twice a week.\n2. Review your recurring app subscriptions.\n3. Transfer 10% of income to savings automatically.";
-      }
-
-      const aiMsg = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiResponseText };
+    // 2. Call real AI API
+    try {
+      const result = await sendChatMessage(messageContent);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const aiMsg = { id: (Date.now() + 1).toString(), sender: 'ai', type: 'text', text: result.response };
       setMessages((prev) => [...prev, aiMsg]);
+    } catch (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const errorMsg = { 
+        id: (Date.now() + 1).toString(), 
+        sender: 'ai', 
+        type: 'error',
+        text: "Sorry, I'm having trouble connecting to the server. Please try again later." 
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+      console.error(error);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -77,11 +88,16 @@ export default function AssistantScreen() {
         renderItem={({ item }) => (
           <View style={[
             styles.messageBubble, 
-            item.sender === 'user' ? styles.userBubble : styles.aiBubble
+            item.sender === 'user' ? styles.userBubble : styles.aiBubble,
+            item.type === 'error' && styles.errorBubble
           ]}>
+            {item.type === 'error' && (
+              <Feather name="alert-triangle" size={16} color="#FD3C4A" style={{ marginBottom: 4 }} />
+            )}
             <Text style={[
               styles.messageText,
-              item.sender === 'user' ? styles.userMessageText : styles.aiMessageText
+              item.sender === 'user' ? styles.userMessageText : styles.aiMessageText,
+              item.type === 'error' && styles.errorMessageText
             ]}>
               {item.text}
             </Text>
@@ -174,6 +190,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     borderBottomRightRadius: 4,
   },
+  errorBubble: {
+    backgroundColor: 'rgba(253, 60, 74, 0.1)',
+    borderColor: 'rgba(253, 60, 74, 0.3)',
+  },
   messageText: {
     fontSize: 15,
     lineHeight: 22,
@@ -184,6 +204,10 @@ const styles = StyleSheet.create({
   userMessageText: {
     color: '#FFFFFF',
     fontWeight: '500',
+  },
+  errorMessageText: {
+    color: '#FD3C4A',
+    fontSize: 14,
   },
   promptsContainer: {
     paddingHorizontal: 15,
