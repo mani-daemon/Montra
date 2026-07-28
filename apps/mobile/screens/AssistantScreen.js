@@ -10,14 +10,15 @@ import {
   Platform,
   ActivityIndicator 
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { COLORS, SIZES } from '../constants/theme';
 
 export default function AssistantScreen() {
   const [messages, setMessages] = useState([
     {
       id: '1',
       sender: 'ai',
-      text: "Hello Mani! 👋 I'm your Montra Financial Assistant. Ask me anything about your balance, spending habits, or budget goals.",
+      text: "Hello! 👋 I'm your Montra Financial Assistant. Ask me anything about your balance, spending habits, or budget goals.",
     },
   ]);
   const [inputText, setInputText] = useState('');
