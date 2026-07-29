@@ -25,8 +25,8 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
-        access_token = create_access_token(data={"sub": user.email})
-        refresh_token = create_refresh_token(data={"sub": user.email})
+        access_token = create_access_token(user.id)
+        refresh_token = create_refresh_token(user.id)
         
         return Token(
             access_token=access_token, 
@@ -35,15 +35,15 @@ class AuthService:
         )
         
     def refresh_token(self, db: Session, refresh_token: str) -> Token:
-        email = decode_access_token(refresh_token)
-        if email is None:
+        user_id = decode_access_token(refresh_token, expected_type="refresh")
+        if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid refresh token",
                 headers={"WWW-Authenticate": "Bearer"},
             )
             
-        user = self.repo.get_by_email(db, email)
+        user = self.repo.get_by_id(db, user_id)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -51,9 +51,10 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
             
-        new_access_token = create_access_token(data={"sub": user.email})
+        new_access_token = create_access_token(user.id)
+        new_refresh_token = create_refresh_token(user.id)
         return Token(
             access_token=new_access_token,
             token_type="bearer",
-            refresh_token=refresh_token
+            refresh_token=new_refresh_token
         )

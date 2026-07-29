@@ -14,7 +14,7 @@ interface TransactionState {
 
 export const useTransactionStore = create<TransactionState>((set, get) => ({
   transactions: [],
-  summary: { balance: 0, total_income: 0, total_expense: 0 },
+  summary: { balance_minor: 0, total_income_minor: 0, total_expense_minor: 0 },
   isLoading: false,
   error: null,
 

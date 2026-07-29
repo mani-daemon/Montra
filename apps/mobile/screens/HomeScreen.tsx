@@ -2,8 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useTransactionStore } from '../store/useTransactionStore';
 import { getInsight } from '../services/api';
+import { useSummary, useTransactions } from '../services/queries';
+import { formatMoney } from '../services/money';
 import AddTransactionModal from '../components/AddTransactionModal';
 import InsightModal from '../components/InsightModal';
 import TransactionList from '../components/TransactionList';
@@ -17,24 +18,21 @@ export default function HomeScreen() {
   const [insightData, setInsightData] = useState<string>('Tap to analyze your spending habits.');
   const { currency } = useCurrency();
   
-  const {
-    transactions,
-    summary,
-    isLoading,
-    error,
-    fetchTransactions,
-    fetchSummary,
-  } = useTransactionStore();
-
-  useEffect(() => {
-    fetchTransactions();
-    fetchSummary();
-  }, []);
+  const transactionsQuery = useTransactions();
+  const summaryQuery = useSummary();
+  const transactions = transactionsQuery.data ?? [];
+  const summary = summaryQuery.data ?? {
+    balance_minor: 0,
+    total_income_minor: 0,
+    total_expense_minor: 0,
+  };
+  const isLoading = transactionsQuery.isLoading || summaryQuery.isLoading;
+  const error = transactionsQuery.error || summaryQuery.error;
 
   const onRefresh = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await Promise.all([fetchTransactions(), fetchSummary()]);
-  }, [fetchTransactions, fetchSummary]);
+    await Promise.all([transactionsQuery.refetch(), summaryQuery.refetch()]);
+  }, [transactionsQuery, summaryQuery]);
 
   const handleAIAssistant = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -89,21 +87,21 @@ export default function HomeScreen() {
       {/* Total Balance Card */}
       <View style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Total Balance</Text>
-        <Text style={styles.balanceAmount}>{currency.symbol}{(summary?.balance || 0).toFixed(2)}</Text>
+        <Text style={styles.balanceAmount}>{formatMoney(summary.balance_minor, currency.code)}</Text>
         
         <View style={styles.balanceStats}>
           <View style={styles.statItem}>
             <Feather name="arrow-down-left" size={20} color={COLORS.success} />
             <View style={{ marginLeft: 8 }}>
               <Text style={styles.statLabel}>Income</Text>
-              <Text style={styles.statValue}>{currency.symbol}{(summary?.total_income || 0).toFixed(2)}</Text>
+              <Text style={styles.statValue}>{formatMoney(summary.total_income_minor, currency.code)}</Text>
             </View>
           </View>
           <View style={styles.statItem}>
             <Feather name="arrow-up-right" size={20} color={COLORS.danger} />
             <View style={{ marginLeft: 8 }}>
               <Text style={styles.statLabel}>Expenses</Text>
-              <Text style={styles.statValue}>{currency.symbol}{(summary?.total_expense || 0).toFixed(2)}</Text>
+              <Text style={styles.statValue}>{formatMoney(summary.total_expense_minor, currency.code)}</Text>
             </View>
           </View>
         </View>
@@ -130,7 +128,7 @@ export default function HomeScreen() {
 
       {error && (
         <View style={{ padding: 10, backgroundColor: COLORS.danger }}>
-          <Text style={{ color: '#fff', textAlign: 'center' }}>{error}</Text>
+          <Text style={{ color: '#fff', textAlign: 'center' }}>Could not refresh your financial data. Pull to retry.</Text>
         </View>
       )}
 

@@ -8,7 +8,7 @@ class TransactionModel(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(200), index=True, nullable=False)
-    amount = Column(Integer) # Stored in cents
+    amount = Column(Integer, nullable=False)  # ISO-4217 minor units; never float
     type = Column(String(20), index=True, nullable=False)  # 'income' or 'expense'
     category = Column(String(100), index=True, default="General")
     description = Column(String(500))
@@ -17,3 +17,7 @@ class TransactionModel(Base):
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
     
     owner = relationship("UserModel", back_populates="transactions")
+
+    @property
+    def amount_minor(self) -> int:
+        return self.amount

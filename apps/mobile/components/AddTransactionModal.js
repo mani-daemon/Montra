@@ -14,6 +14,7 @@ import { useCreateTransaction } from '../services/queries';
 import { CATEGORIES } from '../constants/categories';
 import { COLORS, SIZES } from '../constants/theme';
 import { useCurrency } from '../context/CurrencyContext';
+import { toMinorUnits } from '../services/money';
 
 export default function AddTransactionModal({ visible, onClose }) {
   const [title, setTitle] = useState('');
@@ -30,8 +31,8 @@ export default function AddTransactionModal({ visible, onClose }) {
       return;
     }
 
-    const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+    const amountMinor = toMinorUnits(amount);
+    if (amountMinor === null) {
       Alert.alert('Error', 'Please enter a valid amount.');
       return;
     }
@@ -39,7 +40,7 @@ export default function AddTransactionModal({ visible, onClose }) {
     createTxMutation.mutate(
       {
         title: title.trim(),
-        amount: parsedAmount,
+        amount_minor: amountMinor,
         type: type,
         category: category,
       },

@@ -38,11 +38,11 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    email = decode_access_token(token)
-    if email is None:
+    user_id = decode_access_token(token)
+    if user_id is None:
         raise credentials_exception
     
-    user = repo.get_by_email(db, email)
+    user = repo.get_by_id(db, user_id)
     if user is None:
         raise credentials_exception
     return user

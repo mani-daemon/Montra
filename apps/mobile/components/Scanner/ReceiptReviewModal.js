@@ -17,6 +17,7 @@ import { uploadReceipt } from '../../services/api';
 import { CATEGORIES } from '../../constants/categories';
 import { COLORS, SIZES } from '../../constants/theme';
 import { useCurrency } from '../../context/CurrencyContext';
+import { toMinorUnits } from '../../services/money';
 
 export default function ReceiptReviewModal({ visible, imageUri, onClose }) {
   const [loading, setLoading] = useState(true);
@@ -67,12 +68,13 @@ export default function ReceiptReviewModal({ visible, imageUri, onClose }) {
   }, [visible, imageUri]);
 
   const handleSave = () => {
-    if (!merchant || !amount) return;
+    const amountMinor = toMinorUnits(amount);
+    if (!merchant || amountMinor === null) return;
 
     createTxMutation.mutate(
       {
         title: merchant,
-        amount: parseFloat(amount),
+        amount_minor: amountMinor,
         type: 'expense',
         category: category,
       },

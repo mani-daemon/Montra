@@ -6,6 +6,7 @@ import { useSummary, useTransactions } from '../services/queries';
 import { CATEGORIES, getCategoryColor } from '../constants/categories';
 import { COLORS, SIZES } from '../constants/theme';
 import { useCurrency } from '../context/CurrencyContext';
+import { formatMoney } from '../services/money';
 
 const { width } = Dimensions.get('window');
 
@@ -14,7 +15,7 @@ export default function AnalyticsScreen() {
   const { data: summaryData, isLoading: loadingSummary, refetch: refetchSummary, isRefetching: refetchingSummary } = useSummary();
   const { data: transactions, isLoading: loadingTransactions, refetch: refetchTransactions, isRefetching: refetchingTransactions } = useTransactions();
 
-  const summary = summaryData || { balance: 0, total_income: 0, total_expense: 0 };
+  const summary = summaryData || { balance_minor: 0, total_income_minor: 0, total_expense_minor: 0 };
   const txs = transactions || [];
   
   const refreshing = refetchingSummary || refetchingTransactions;
@@ -26,33 +27,33 @@ export default function AnalyticsScreen() {
   // 1. Prepare Bar Chart Data
   const barData = useMemo(() => [
     {
-      value: summary.total_income,
+      value: summary.total_income_minor,
       label: 'Income',
       frontColor: COLORS.success,
       topLabelComponent: () => (
         <Text style={{ color: COLORS.success, fontSize: 11, fontWeight: 'bold', marginBottom: 4 }}>
-          {currency.symbol}{summary.total_income}
+          {formatMoney(summary.total_income_minor, currency.code)}
         </Text>
       ),
     },
     {
-      value: summary.total_expense,
+      value: summary.total_expense_minor,
       label: 'Expense',
       frontColor: COLORS.danger,
       topLabelComponent: () => (
         <Text style={{ color: COLORS.danger, fontSize: 11, fontWeight: 'bold', marginBottom: 4 }}>
-          {currency.symbol}{summary.total_expense}
+          {formatMoney(summary.total_expense_minor, currency.code)}
         </Text>
       ),
     },
-  ], [summary.total_income, summary.total_expense, currency.symbol]);
+  ], [summary.total_income_minor, summary.total_expense_minor, currency.code]);
 
   // 2. Prepare Pie Chart Data
   const pieData = useMemo(() => {
     const expenses = txs.filter((t) => t.type === 'expense');
     const totals = {};
     expenses.forEach((t) => {
-      totals[t.category] = (totals[t.category] || 0) + t.amount;
+      totals[t.category] = (totals[t.category] || 0) + t.amount_minor;
     });
 
     return Object.keys(totals).map((cat) => ({
@@ -95,7 +96,7 @@ export default function AnalyticsScreen() {
               xAxisThickness={0}
               xAxisLabelTextStyle={{ color: COLORS.textSecondary, fontSize: 12, fontWeight: '600' }}
               noOfSections={3}
-              maxValue={Math.max(summary.total_income, summary.total_expense, 100) * 1.2}
+              maxValue={Math.max(summary.total_income_minor, summary.total_expense_minor, 100) * 1.2}
               isAnimated
             />
           </View>
@@ -119,7 +120,7 @@ export default function AnalyticsScreen() {
                   return (
                     <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                       <Text style={{ fontSize: 18, color: COLORS.text, fontWeight: 'bold' }}>
-                        {currency.symbol}{summary.total_expense.toFixed(0)}
+                        {formatMoney(summary.total_expense_minor, currency.code)}
                       </Text>
                       <Text style={{ fontSize: 11, color: COLORS.textSecondary }}>Spent</Text>
                     </View>
@@ -133,7 +134,7 @@ export default function AnalyticsScreen() {
                   <View key={item.text} style={styles.legendItem}>
                     <View style={[styles.colorDot, { backgroundColor: item.color }]} />
                     <Text style={styles.legendText}>{item.text}</Text>
-                    <Text style={styles.legendValue}>{currency.symbol}{item.value.toFixed(2)}</Text>
+                    <Text style={styles.legendValue}>{formatMoney(item.value, currency.code)}</Text>
                   </View>
                 ))}
               </View>

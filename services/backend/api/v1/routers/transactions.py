@@ -18,7 +18,7 @@ def get_summary(
 ):
     return transaction_service.get_summary(db, current_user.id)
 
-@router.get("", response_model=List[TransactionResponse])
+@router.get("/", response_model=List[TransactionResponse])
 def get_transactions(
     skip: int = 0,
     limit: int = 100,

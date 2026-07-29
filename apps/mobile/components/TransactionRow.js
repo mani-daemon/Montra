@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../constants/theme';
 import { useCurrency } from '../context/CurrencyContext';
+import { formatMoney } from '../services/money';
 
 const TransactionRow = ({ item }) => {
   const { currency } = useCurrency();
@@ -24,7 +25,7 @@ const TransactionRow = ({ item }) => {
         </View>
       </View>
       <Text style={[styles.txAmount, { color: isIncome ? COLORS.success : COLORS.text }]}>
-        {isIncome ? '+' : '-'}{currency.symbol}{item.amount.toFixed(2)}
+        {isIncome ? '+' : '-'}{formatMoney(item.amount_minor, item.currency || currency.code)}
       </Text>
     </View>
   );

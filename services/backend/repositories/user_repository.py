@@ -5,6 +5,9 @@ from schemas.user import UserCreate
 from core.security import get_password_hash
 
 class UserRepository:
+    def get_by_id(self, db: Session, user_id: int) -> Optional[UserModel]:
+        return db.query(UserModel).filter(UserModel.id == user_id).first()
+
     def get_by_email(self, db: Session, email: str) -> Optional[UserModel]:
         return db.query(UserModel).filter(UserModel.email == email).first()
 

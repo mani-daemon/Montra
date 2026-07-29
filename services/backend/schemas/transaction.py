@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field
 from datetime import datetime
 from enum import Enum
 
@@ -11,11 +11,11 @@ class CategoryEnum(str, Enum):
     general = "General"
 
 class TransactionBase(BaseModel):
-    title: str
-    amount: float
-    type: str
+    title: str = Field(min_length=1, max_length=200)
+    amount_minor: int = Field(gt=0, le=10**12)
+    type: str = Field(pattern="^(income|expense)$")
     category: CategoryEnum = CategoryEnum.general
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=500)
 
 class TransactionCreate(TransactionBase):
     pass
@@ -24,13 +24,6 @@ class TransactionResponse(TransactionBase):
     id: int
     created_at: datetime
     user_id: int
-
-    @field_validator('amount', mode='before')
-    def convert_cents_to_float(cls, v):
-        # Database stores amount as integer cents, API outputs float
-        if isinstance(v, int):
-            return v / 100.0
-        return v
 
     class Config:
         from_attributes = True

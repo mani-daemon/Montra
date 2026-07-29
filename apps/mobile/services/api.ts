@@ -1,10 +1,17 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
-import { getAccessToken, clearTokens } from './storage';
+import axios, { AxiosInstance, AxiosError, AxiosHeaders, InternalAxiosRequestConfig } from 'axios';
+import { getAccessToken, getRefreshToken, saveToken, clearTokens } from './storage';
 import { globalEvents } from './eventEmitter';
 import { Transaction, TransactionCreate, TransactionSummary } from '../types/transaction';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.48:8005';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 const API_PREFIX = '/api/v1';
+
+if (!BASE_URL) {
+  throw new Error('EXPO_PUBLIC_API_URL must be configured.');
+}
+if (!__DEV__ && !BASE_URL.startsWith('https://')) {
+  throw new Error('Production API URL must use HTTPS.');
+}
 
 const api: AxiosInstance = axios.create({
   baseURL: `${BASE_URL}${API_PREFIX}`,
@@ -24,10 +31,38 @@ api.interceptors.request.use(async (config) => {
 });
 
 // Add response interceptor for error handling
+let refreshPromise: Promise<string | null> | null = null;
+
+const refreshAccessToken = async (): Promise<string | null> => {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const refreshToken = await getRefreshToken();
+      if (!refreshToken) return null;
+      const { data } = await api.post('/auth/refresh', { refresh_token: refreshToken });
+      await saveToken(data.access_token, data.refresh_token);
+      return data.access_token as string;
+    })().finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    if (error.response?.status === 401) {
+    const request = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+    const isAuthRequest = request?.url?.startsWith('/auth/');
+    if (error.response?.status === 401 && request && !request._retry && !isAuthRequest) {
+      request._retry = true;
+      try {
+        const token = await refreshAccessToken();
+        if (token) {
+          request.headers = AxiosHeaders.from(request.headers);
+          request.headers.set('Authorization', `Bearer ${token}`);
+          return api.request(request);
+        }
+      } catch {
+        // Clear credentials below and propagate the original authorization failure.
+      }
       await clearTokens();
       globalEvents.emit('logout');
     }
@@ -45,15 +80,8 @@ export const getTransactions = async (): Promise<Transaction[]> => {
   }
 };
 
-export const getSummary = async (): Promise<TransactionSummary> => {
-  try {
-    const response = await api.get<TransactionSummary>('/transactions/summary');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching summary:', error);
-    return { balance: 0, total_income: 0, total_expense: 0 };
-  }
-};
+export const getSummary = async (): Promise<TransactionSummary> =>
+  (await api.get<TransactionSummary>('/transactions/summary')).data;
 
 export const createTransaction = async (transaction: TransactionCreate): Promise<Transaction> => {
   try {

@@ -12,7 +12,9 @@ class TransactionRepository:
         return db.query(TransactionModel).filter(TransactionModel.id == transaction_id, TransactionModel.user_id == user_id).first()
 
     def create_for_user(self, db: Session, transaction: TransactionCreate, user_id: int) -> TransactionModel:
-        db_transaction = TransactionModel(**transaction.dict(), user_id=user_id)
+        values = transaction.model_dump()
+        values["amount"] = values.pop("amount_minor")
+        db_transaction = TransactionModel(**values, user_id=user_id)
         db.add(db_transaction)
         db.commit()
         db.refresh(db_transaction)

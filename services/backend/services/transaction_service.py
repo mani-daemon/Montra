@@ -23,7 +23,7 @@ class TransactionService:
     def get_summary(self, db: Session, user_id: int):
         balance, total_income, total_expense = self.repo.get_summary_for_user(db, user_id)
         return {
-            "balance": balance / 100.0,
-            "total_income": total_income / 100.0,
-            "total_expense": total_expense / 100.0
+            "balance_minor": balance,
+            "total_income_minor": total_income,
+            "total_expense_minor": total_expense,
         }

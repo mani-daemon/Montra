@@ -6,7 +6,19 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Montra uses your camera only to scan receipts."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Montra uses selected receipt photos to create transactions."
+        }
+      ]
     ]
   }
 }
