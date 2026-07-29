@@ -6,7 +6,7 @@ import { useTransactionStore } from '../store/useTransactionStore';
 import { getInsight } from '../services/api';
 import AddTransactionModal from '../components/AddTransactionModal';
 import InsightModal from '../components/InsightModal';
-import TransactionRow from '../components/TransactionRow';
+import TransactionList from '../components/TransactionList';
 import { COLORS, SIZES } from '../constants/theme';
 import { useCurrency } from '../context/CurrencyContext';
 import { Transaction } from '../types/transaction';
@@ -121,21 +121,11 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList 
-        data={transactions}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <TransactionRow item={item as any} />}
-        ListHeaderComponent={renderHeader}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        style={{ paddingHorizontal: SIZES.padding }}
-        refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={onRefresh} tintColor={COLORS.primary} />
-        }
-        initialNumToRender={15}
-        maxToRenderPerBatch={10}
-        windowSize={7}
-        removeClippedSubviews
-        ListEmptyComponent={<Text style={styles.emptyText}>No transactions found</Text>}
+      <TransactionList 
+        transactions={transactions}
+        isLoading={isLoading}
+        onRefresh={onRefresh}
+        ListHeaderComponent={renderHeader()}
       />
 
       {error && (

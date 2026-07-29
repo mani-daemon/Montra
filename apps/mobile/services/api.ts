@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { getToken, clearToken } from './authClient';
+import { getAccessToken, clearTokens } from './storage';
 import { globalEvents } from './eventEmitter';
 import { Transaction, TransactionCreate, TransactionSummary } from '../types/transaction';
 
@@ -16,7 +16,7 @@ const api: AxiosInstance = axios.create({
 
 // Add request interceptor for auth token
 api.interceptors.request.use(async (config) => {
-  const token = await getToken();
+  const token = await getAccessToken();
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -28,7 +28,7 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     if (error.response?.status === 401) {
-      await clearToken();
+      await clearTokens();
       globalEvents.emit('logout');
     }
     return Promise.reject(error);

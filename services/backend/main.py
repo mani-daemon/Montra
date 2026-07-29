@@ -14,18 +14,23 @@ load_dotenv()
 # Create tables
 Base.metadata.create_all(bind=engine)
 
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+from core.middlewares import SecurityHeadersMiddleware
+from core.config import settings
+
 app = FastAPI(title="Montra V2 (Layered Architecture)")
 
-# Configure CORS
-allowed_origins = os.getenv("ALLOWED_ORIGINS")
-if allowed_origins:
-    origins = [origin.strip() for origin in allowed_origins.split(",")]
-else:
-    origins = ["http://localhost", "http://127.0.0.1", "http://localhost:8081", "exp://127.0.0.1:8081"]
+# Force HTTPS in production
+if settings.ENVIRONMENT == "production":
+    app.add_middleware(HTTPSRedirectMiddleware)
 
+# Add security headers
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
