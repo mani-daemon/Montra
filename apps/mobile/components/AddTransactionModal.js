@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
-  Modal,
   TextInput,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Feather } from '@expo/vector-icons';
 import { useCreateTransaction } from '../services/queries';
 import { CATEGORIES } from '../constants/categories';
@@ -23,6 +23,23 @@ export default function AddTransactionModal({ visible, onClose }) {
   const [category, setCategory] = useState(CATEGORIES[0].label);
   const { currency } = useCurrency();
   
+  const bottomSheetModalRef = useRef(null);
+  const snapPoints = useMemo(() => ['75%', '90%'], []);
+  
+  useEffect(() => {
+    if (visible) {
+      bottomSheetModalRef.current?.present();
+    } else {
+      bottomSheetModalRef.current?.dismiss();
+    }
+  }, [visible]);
+
+  const handleSheetChanges = (index) => {
+    if (index === -1) {
+      onClose();
+    }
+  };
+
   const createTxMutation = useCreateTransaction();
 
   const handleSubmit = async () => {
@@ -52,7 +69,7 @@ export default function AddTransactionModal({ visible, onClose }) {
           setType('expense');
           setCategory(CATEGORIES[0].label);
 
-          onClose(); // Close modal
+          bottomSheetModalRef.current?.dismiss();
         },
         onError: () => {
           Alert.alert('Error', 'Failed to save transaction. Please try again.');
@@ -61,129 +78,137 @@ export default function AddTransactionModal({ visible, onClose }) {
     );
   };
 
+  const renderBackdrop = (props) => (
+    <BottomSheetBackdrop
+      {...props}
+      disappearsOnIndex={-1}
+      appearsOnIndex={0}
+      opacity={0.7}
+    />
+  );
+
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Add Transaction</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Feather name="x" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Type Selector (Income / Expense) */}
-          <View style={styles.typeContainer}>
-            <TouchableOpacity
-              style={[styles.typeButton, type === 'expense' && styles.expenseActive]}
-              onPress={() => setType('expense')}
-            >
-              <Feather
-                name="arrow-up-right"
-                size={18}
-                color={type === 'expense' ? COLORS.text : COLORS.textSecondary}
-              />
-              <Text style={[styles.typeText, type === 'expense' && styles.activeText]}>
-                Expense
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.typeButton, type === 'income' && styles.incomeActive]}
-              onPress={() => setType('income')}
-            >
-              <Feather
-                name="arrow-down-left"
-                size={18}
-                color={type === 'income' ? COLORS.text : COLORS.textSecondary}
-              />
-              <Text style={[styles.typeText, type === 'income' && styles.activeText]}>
-                Income
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Title Input */}
-          <Text style={styles.label}>Title</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Grocery Shopping"
-            placeholderTextColor={COLORS.textMuted}
-            value={title}
-            onChangeText={setTitle}
-            accessible={true}
-            accessibilityLabel="Transaction title"
-            accessibilityHint="Enter the title of your transaction"
-            autoCapitalize="words"
-          />
-
-          {/* Amount Input */}
-          <Text style={styles.label}>Amount ({currency.symbol})</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="0.00"
-            placeholderTextColor={COLORS.textMuted}
-            keyboardType="numeric"
-            value={amount}
-            onChangeText={setAmount}
-            accessible={true}
-            accessibilityLabel="Transaction amount"
-            accessibilityHint="Enter the monetary amount of your transaction"
-          />
-
-          {/* Category Selector */}
-          <Text style={styles.label}>Category</Text>
-          <View style={styles.categoriesContainer}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat.id}
-                style={[
-                  styles.categoryChip,
-                  category === cat.label && styles.categoryChipActive,
-                ]}
-                onPress={() => setCategory(cat.label)}
-              >
-                <Text
-                  style={[
-                    styles.categoryText,
-                    category === cat.label && styles.categoryTextActive,
-                  ]}
-                >
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={styles.submitButton}
-            onPress={handleSubmit}
-            disabled={createTxMutation.isPending}
-          >
-            {createTxMutation.isPending ? (
-              <ActivityIndicator color={COLORS.text} />
-            ) : (
-              <Text style={styles.submitButtonText}>Save Transaction</Text>
-            )}
+    <BottomSheetModal
+      ref={bottomSheetModalRef}
+      index={0}
+      snapPoints={snapPoints}
+      onChange={handleSheetChanges}
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{ backgroundColor: COLORS.card }}
+      handleIndicatorStyle={{ backgroundColor: COLORS.textMuted }}
+    >
+      <View style={styles.modalContainer}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Add Transaction</Text>
+          <TouchableOpacity onPress={() => bottomSheetModalRef.current?.dismiss()} style={styles.closeButton}>
+            <Feather name="x" size={20} color={COLORS.textSecondary} />
           </TouchableOpacity>
         </View>
+
+        {/* Type Selector (Income / Expense) */}
+        <View style={styles.typeContainer}>
+          <TouchableOpacity
+            style={[styles.typeButton, type === 'expense' && styles.expenseActive]}
+            onPress={() => setType('expense')}
+          >
+            <Feather
+              name="arrow-up-right"
+              size={18}
+              color={type === 'expense' ? COLORS.text : COLORS.textSecondary}
+            />
+            <Text style={[styles.typeText, type === 'expense' && styles.activeText]}>
+              Expense
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.typeButton, type === 'income' && styles.incomeActive]}
+            onPress={() => setType('income')}
+          >
+            <Feather
+              name="arrow-down-left"
+              size={18}
+              color={type === 'income' ? COLORS.text : COLORS.textSecondary}
+            />
+            <Text style={[styles.typeText, type === 'income' && styles.activeText]}>
+              Income
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Title Input */}
+        <Text style={styles.label}>Title</Text>
+        <BottomSheetTextInput
+          style={styles.input}
+          placeholder="e.g. Grocery Shopping"
+          placeholderTextColor={COLORS.textMuted}
+          value={title}
+          onChangeText={setTitle}
+          accessible={true}
+          accessibilityLabel="Transaction title"
+          accessibilityHint="Enter the title of your transaction"
+          autoCapitalize="words"
+        />
+
+        {/* Amount Input */}
+        <Text style={styles.label}>Amount ({currency.symbol})</Text>
+        <BottomSheetTextInput
+          style={styles.input}
+          placeholder="0.00"
+          placeholderTextColor={COLORS.textMuted}
+          keyboardType="numeric"
+          value={amount}
+          onChangeText={setAmount}
+          accessible={true}
+          accessibilityLabel="Transaction amount"
+          accessibilityHint="Enter the monetary amount of your transaction"
+        />
+
+        {/* Category Selector */}
+        <Text style={styles.label}>Category</Text>
+        <View style={styles.categoriesContainer}>
+          {CATEGORIES.map((cat) => (
+            <TouchableOpacity
+              key={cat.id}
+              style={[
+                styles.categoryChip,
+                category === cat.label && styles.categoryChipActive,
+              ]}
+              onPress={() => setCategory(cat.label)}
+            >
+              <Text
+                style={[
+                  styles.categoryText,
+                  category === cat.label && styles.categoryTextActive,
+                ]}
+              >
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Submit Button */}
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={handleSubmit}
+          disabled={createTxMutation.isPending}
+        >
+          {createTxMutation.isPending ? (
+            <ActivityIndicator color={COLORS.text} />
+          ) : (
+            <Text style={styles.submitButtonText}>Save Transaction</Text>
+          )}
+        </TouchableOpacity>
       </View>
-    </Modal>
+    </BottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    justifyContent: 'flex-end',
-  },
   modalContainer: {
-    backgroundColor: COLORS.card,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    flex: 1,
     padding: SIZES.padding,
     paddingBottom: 40,
   },

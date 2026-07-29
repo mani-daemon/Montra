@@ -48,3 +48,23 @@ class AIService:
         hist_serialized = [{"role": "user", "text": h.message} for h in history] + [{"role": "ai", "text": h.response} for h in history]
         
         return {"response": response, "history": hist_serialized}
+
+    async def stream_chat(self, db: Session, user_id: int, message: str):
+        user = self.user_repo.get_by_id(db, user_id)
+        language = "fa" if getattr(user, "language", "fa") == "fa" else "en"
+
+        history = self.chat_repo.get_history(db, user_id, limit=5)
+        recent_tx = self.repo.get_all_for_user(db, user_id, limit=50)
+        
+        context_msg = "Conversation History:\n"
+        for h in reversed(history):
+            context_msg += f"User: {h.message}\nAI: {h.response}\n"
+        context_msg += f"\nUser: {message}"
+
+        full_response = ""
+        for chunk in self.provider.stream_chat(context_msg, recent_tx, language=language):
+            full_response += chunk
+            yield chunk
+
+        # Save to DB after stream completes
+        self.chat_repo.save_message(db, user_id, message, full_response)

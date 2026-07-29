@@ -3,6 +3,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ActivityIndicator, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 import AppNavigator from './navigation/AppNavigator';
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -47,16 +49,20 @@ function NavigationRoot() {
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <CurrencyProvider>
-            <AuthProvider>
-              <NavigationRoot />
-            </AuthProvider>
-          </CurrencyProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <BottomSheetModalProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider>
+              <CurrencyProvider>
+                <AuthProvider>
+                  <NavigationRoot />
+                </AuthProvider>
+              </CurrencyProvider>
+            </ThemeProvider>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </BottomSheetModalProvider>
+    </GestureHandlerRootView>
   );
 }

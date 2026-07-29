@@ -28,6 +28,8 @@ async def analyze_receipt_endpoint(
         raise HTTPException(413, "Receipt image must not exceed 10 MB")
     return ai_service.analyze_receipt(image_bytes, file.content_type)
 
+from fastapi.responses import StreamingResponse
+
 @router.post("/assistant/chat")
 async def chat_endpoint(
     req: ChatRequest,
@@ -36,6 +38,20 @@ async def chat_endpoint(
     ai_service: AIService = Depends(get_ai_service)
 ):
     return ai_service.chat(db, current_user.id, req.message)
+
+@router.post("/assistant/chat/stream")
+async def chat_stream_endpoint(
+    req: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+    ai_service: AIService = Depends(get_ai_service)
+):
+    async def event_generator():
+        async for chunk in ai_service.stream_chat(db, current_user.id, req.message):
+            # Server-Sent Events format
+            yield f"data: {chunk}\n\n"
+            
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.get("/insights")
 async def get_insights(

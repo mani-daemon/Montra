@@ -97,6 +97,36 @@ class GeminiProvider(AIProvider):
         )
         return response.text
 
+    def stream_chat(self, prompt: str, user_transactions: list, language: str = "en"):
+        if self.mock_mode:
+            yield "This is a mock response. The AI provider is not configured properly."
+            return
+
+        tx_context = "User's Recent Transactions:\n"
+        if not user_transactions:
+            tx_context += "No transactions yet.\n"
+        else:
+            for t in user_transactions:
+                tx_context += f"- {t.title}: ${t.amount/100:.2f} ({t.category}, {t.type})\n"
+                
+        system_instruction = f"""
+        You are Montra AI, a highly intelligent, supportive, and concise personal finance advisor.
+        Answer the user's question based on their transaction history below.
+        Keep your answers short (2-3 sentences max) and conversational. Do not use markdown headers.
+        Respond in language: {language}.
+        
+        {tx_context}
+        """
+        
+        response_stream = self.client.models.generate_content_stream(
+            model=self.model_name,
+            contents=[system_instruction, prompt],
+        )
+        
+        for chunk in response_stream:
+            if chunk.text:
+                yield chunk.text
+
     def get_insights(self, summary_data: dict) -> str:
         if self.mock_mode:
             return "Mock Insight: Keep tracking your expenses to build wealth!"
