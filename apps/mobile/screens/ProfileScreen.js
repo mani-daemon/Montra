@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'rea
 import { Feather } from '@expo/vector-icons';
 // Import removed
 import { globalEvents } from '../services/eventEmitter';
+import { clearTokens } from '../services/storage';
 import { COLORS, SIZES } from '../constants/theme';
 import { useCurrency } from '../context/CurrencyContext';
 
@@ -16,7 +17,7 @@ export default function ProfileScreen() {
         text: 'Logout', 
         style: 'destructive', 
         onPress: async () => {
-          await clearToken();
+          await clearTokens();
           globalEvents.emit('logout');
         } 
       },
