@@ -70,9 +70,9 @@ api.interceptors.response.use(
   }
 );
 
-export const getTransactions = async (): Promise<Transaction[]> => {
+export const getTransactions = async (page: number = 1, size: number = 20): Promise<{ items: Transaction[], total: number, page: number, size: number }> => {
   try {
-    const response = await api.get<Transaction[]>('/transactions/');
+    const response = await api.get<{ items: Transaction[], total: number, page: number, size: number }>(`/transactions/?page=${page}&size=${size}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching transactions:', error);

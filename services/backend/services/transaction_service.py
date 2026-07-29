@@ -10,6 +10,9 @@ class TransactionService:
     def get_all(self, db: Session, user_id: int, skip: int = 0, limit: int = 100):
         return self.repo.get_all_for_user(db, user_id, skip, limit)
 
+    def count(self, db: Session, user_id: int) -> int:
+        return self.repo.count_for_user(db, user_id)
+
     def create(self, db: Session, transaction: TransactionCreate, user_id: int):
         return self.repo.create_for_user(db, transaction, user_id)
 

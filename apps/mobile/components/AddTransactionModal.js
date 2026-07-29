@@ -112,6 +112,10 @@ export default function AddTransactionModal({ visible, onClose }) {
             placeholderTextColor={COLORS.textMuted}
             value={title}
             onChangeText={setTitle}
+            accessible={true}
+            accessibilityLabel="Transaction title"
+            accessibilityHint="Enter the title of your transaction"
+            autoCapitalize="words"
           />
 
           {/* Amount Input */}
@@ -123,6 +127,9 @@ export default function AddTransactionModal({ visible, onClose }) {
             keyboardType="numeric"
             value={amount}
             onChangeText={setAmount}
+            accessible={true}
+            accessibilityLabel="Transaction amount"
+            accessibilityHint="Enter the monetary amount of your transaction"
           />
 
           {/* Category Selector */}

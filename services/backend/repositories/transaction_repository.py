@@ -8,6 +8,9 @@ class TransactionRepository:
     def get_all_for_user(self, db: Session, user_id: int, skip: int = 0, limit: int = 100) -> List[TransactionModel]:
         return db.query(TransactionModel).filter(TransactionModel.user_id == user_id).order_by(TransactionModel.id.desc()).offset(skip).limit(limit).all()
 
+    def count_for_user(self, db: Session, user_id: int) -> int:
+        return db.query(TransactionModel).filter(TransactionModel.user_id == user_id).count()
+
     def get_by_id(self, db: Session, transaction_id: int, user_id: int) -> Optional[TransactionModel]:
         return db.query(TransactionModel).filter(TransactionModel.id == transaction_id, TransactionModel.user_id == user_id).first()
 

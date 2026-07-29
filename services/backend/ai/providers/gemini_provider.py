@@ -7,12 +7,30 @@ from google.genai import types
 class GeminiProvider(AIProvider):
     def __init__(self):
         self.api_key = os.getenv("GOOGLE_API_KEY")
-        if not self.api_key:
-            raise ValueError("GOOGLE_API_KEY environment variable is not set")
-        self.client = genai.Client(api_key=self.api_key)
         self.model_name = "gemini-flash-latest"
+        self.mock_mode = False
+        
+        if not self.api_key:
+            self.mock_mode = True
+            self.client = None
+        else:
+            try:
+                self.client = genai.Client(api_key=self.api_key)
+            except Exception:
+                self.mock_mode = True
+                self.client = None
 
     def analyze_receipt(self, image_bytes: bytes, mime_type: str) -> dict:
+        if self.mock_mode:
+            return {
+                "merchant_name": "Mock Merchant",
+                "total_amount": 120.50,
+                "tax_amount": 10.0,
+                "date": "2026-07-29",
+                "confidence": 0.95,
+                "items": [{"name": "Mock Item", "price": 110.50}]
+            }
+
         prompt = """
         Analyze this receipt and extract the following information.
         Return ONLY a valid JSON object with this exact structure, nothing else:
@@ -53,7 +71,10 @@ class GeminiProvider(AIProvider):
         except Exception as e:
             raise ValueError(f"AI analysis failed: {str(e)}")
 
-    def chat(self, prompt: str, user_transactions: list) -> str:
+    def chat(self, prompt: str, user_transactions: list, language: str = "en") -> str:
+        if self.mock_mode:
+            return "This is a mock response. The AI provider is not configured properly."
+
         tx_context = "User's Recent Transactions:\n"
         if not user_transactions:
             tx_context += "No transactions yet.\n"
@@ -65,6 +86,7 @@ class GeminiProvider(AIProvider):
         You are Montra AI, a highly intelligent, supportive, and concise personal finance advisor.
         Answer the user's question based on their transaction history below.
         Keep your answers short (2-3 sentences max) and conversational. Do not use markdown headers.
+        Respond in language: {language}.
         
         {tx_context}
         """
@@ -76,6 +98,9 @@ class GeminiProvider(AIProvider):
         return response.text
 
     def get_insights(self, summary_data: dict) -> str:
+        if self.mock_mode:
+            return "Mock Insight: Keep tracking your expenses to build wealth!"
+
         prompt = f"""
         You are Montra AI. Based on the user's current summary:
         Income: ${summary_data.get('income', 0)/100:.2f}

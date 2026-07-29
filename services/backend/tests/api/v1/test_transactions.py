@@ -26,7 +26,11 @@ def test_get_transactions(client, auth_headers):
     # Get all transactions
     response = client.get("/api/v1/transactions/", headers=auth_headers)
     assert response.status_code == status.HTTP_200_OK
-    assert isinstance(response.json(), list)
+    data = response.json()
+    assert isinstance(data, dict)
+    assert "items" in data
+    assert "total" in data
+    assert isinstance(data["items"], list)
 
 
 def test_summary_uses_minor_units_without_rounding(client, auth_headers):

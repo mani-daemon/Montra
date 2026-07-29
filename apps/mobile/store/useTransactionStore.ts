@@ -21,8 +21,8 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   fetchTransactions: async () => {
     set({ isLoading: true, error: null });
     try {
-      const transactions = await getTransactions();
-      set({ transactions, isLoading: false });
+      const response = await getTransactions(1, 100); // Fetch first 100 as a fallback
+      set({ transactions: response.items, isLoading: false });
     } catch (error) {
       set({ error: 'Failed to fetch transactions', isLoading: false });
     }

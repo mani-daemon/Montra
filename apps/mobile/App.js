@@ -11,6 +11,7 @@ import RegisterScreen from './screens/RegisterScreen';
 import { COLORS } from './constants/theme';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const queryClient = new QueryClient();
@@ -48,11 +49,13 @@ export default function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <CurrencyProvider>
-          <AuthProvider>
-            <NavigationRoot />
-          </AuthProvider>
-        </CurrencyProvider>
+        <ThemeProvider>
+          <CurrencyProvider>
+            <AuthProvider>
+              <NavigationRoot />
+            </AuthProvider>
+          </CurrencyProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

@@ -21,15 +21,21 @@ def get_summary(
 ):
     return transaction_service.get_summary(db, current_user.id)
 
-@router.get("/", response_model=List[TransactionResponse])
+from schemas.page import Page
+from fastapi import Query
+
+@router.get("/", response_model=Page[TransactionResponse])
 def get_transactions(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
     transaction_service: TransactionService = Depends(get_transaction_service)
 ):
-    return transaction_service.get_all(db, current_user.id, skip, limit)
+    skip = (page - 1) * size
+    transactions = transaction_service.get_all(db, current_user.id, skip, size)
+    total = transaction_service.count(db, current_user.id)
+    return Page(items=transactions, total=total, page=page, size=size)
 
 @router.post("/", response_model=TransactionResponse, status_code=status.HTTP_201_CREATED)
 def create_transaction(
