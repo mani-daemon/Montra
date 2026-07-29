@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { getToken, clearToken, setToken } from '../services/authClient';
+import { getAccessToken, clearTokens, saveToken } from '../services/storage';
 import { loginUser } from '../services/api';
 import { globalEvents } from '../services/eventEmitter';
 
@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = await getToken();
+        const token = await getAccessToken();
         if (token) {
           setIsAuthenticated(true);
         }
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
     initAuth();
 
     const unsubscribe = globalEvents.on('logout', async () => {
-      await clearToken();
+      await clearTokens();
       setIsAuthenticated(false);
     });
 
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const data = await loginUser(email, password);
     if (data.access_token) {
-      await setToken(data.access_token);
+      await saveToken(data.access_token, data.refresh_token);
       setIsAuthenticated(true);
       return data;
     }
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await clearToken();
+    await clearTokens();
     setIsAuthenticated(false);
   };
 

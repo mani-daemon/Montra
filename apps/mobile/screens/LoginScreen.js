@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
-import { saveToken } from '../services/authClient';
+// Import removed
 
 import { useAuth } from '../context/AuthContext';
 
