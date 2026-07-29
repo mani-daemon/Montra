@@ -1,0 +1,48 @@
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
+
+from core.database import get_db
+from core.security import decode_access_token
+from repositories.user_repository import UserRepository
+from repositories.transaction_repository import TransactionRepository
+from services.auth_service import AuthService
+from services.transaction_service import TransactionService
+from services.ai_service import AIService
+from models.user import UserModel
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
+
+def get_user_repository() -> UserRepository:
+    return UserRepository()
+
+def get_transaction_repository() -> TransactionRepository:
+    return TransactionRepository()
+
+def get_auth_service(repo: UserRepository = Depends(get_user_repository)) -> AuthService:
+    return AuthService(repo)
+
+def get_transaction_service(repo: TransactionRepository = Depends(get_transaction_repository)) -> TransactionService:
+    return TransactionService(repo)
+
+def get_ai_service(repo: TransactionRepository = Depends(get_transaction_repository)) -> AIService:
+    return AIService(repo)
+
+def get_current_user(
+    token: str = Depends(oauth2_scheme), 
+    db: Session = Depends(get_db),
+    repo: UserRepository = Depends(get_user_repository)
+) -> UserModel:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    email = decode_access_token(token)
+    if email is None:
+        raise credentials_exception
+    
+    user = repo.get_by_email(db, email)
+    if user is None:
+        raise credentials_exception
+    return user

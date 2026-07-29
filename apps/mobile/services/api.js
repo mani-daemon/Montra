@@ -3,9 +3,10 @@ import { getToken, clearToken } from './authClient';
 import { globalEvents } from './eventEmitter';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.48:8005';
+const API_PREFIX = '/api/v1';
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: `${BASE_URL}${API_PREFIX}`,
   headers: {
     'Content-Type': 'application/json',
   },

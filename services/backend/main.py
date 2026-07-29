@@ -5,16 +5,16 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-load_dotenv() # Load variables from .env file
-
 import models
-from database import engine, Base
-from routers import auth, transactions, ai
+from core.database import engine, Base
+from api.v1.routers import auth, transactions, ai
 
-# Create database tables directly from Base
+load_dotenv()
+
+# Create tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Montra Financial API")
+app = FastAPI(title="Montra V2 (Layered Architecture)")
 
 # Configure CORS
 allowed_origins = os.getenv("ALLOWED_ORIGINS")
@@ -25,13 +25,12 @@ else:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Exception Handlers
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
@@ -41,17 +40,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    print(f"Unhandled Exception: {str(exc)}")
+    print(exc)
     return JSONResponse(
         status_code=500,
-        content={"detail": "An internal server error occurred."},
+        content={"detail": "An internal server error occurred"},
     )
-
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to Montra API 🚀"}
 
 # Include Routers
 app.include_router(auth.router)
 app.include_router(transactions.router)
 app.include_router(ai.router)
+
+@app.get("/")
+def root():
+    return {"message": "Welcome to Montra API V2 (Layered Architecture) 🚀"}
