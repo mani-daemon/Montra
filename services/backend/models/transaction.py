@@ -1,10 +1,13 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from core.database import Base
 
 class TransactionModel(Base):
     __tablename__ = "transactions"
+    __table_args__ = (
+        Index("ix_transaction_user_time", "user_id", "created_at"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(200), index=True, nullable=False)
