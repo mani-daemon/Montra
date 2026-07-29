@@ -1,37 +1,52 @@
-import React, { useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useSummary, useTransactions, useInsight } from '../services/queries';
+import { useTransactionStore } from '../store/useTransactionStore';
+import { getInsight } from '../services/api';
 import AddTransactionModal from '../components/AddTransactionModal';
 import InsightModal from '../components/InsightModal';
 import TransactionRow from '../components/TransactionRow';
 import { COLORS, SIZES } from '../constants/theme';
 import { useCurrency } from '../context/CurrencyContext';
+import { Transaction } from '../types/transaction';
 
 export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [insightVisible, setInsightVisible] = useState(false);
+  const [insightData, setInsightData] = useState<string>('Tap to analyze your spending habits.');
   const { currency } = useCurrency();
   
-  const { data: summaryData, isLoading: loadingSummary, refetch: refetchSummary, isRefetching: refetchingSummary } = useSummary();
-  const { data: transactionsData, isLoading: loadingTransactions, refetch: refetchTransactions, isRefetching: refetchingTransactions } = useTransactions();
-  const { data: insightData, refetch: refetchInsight } = useInsight();
+  const {
+    transactions,
+    summary,
+    isLoading,
+    error,
+    fetchTransactions,
+    fetchSummary,
+  } = useTransactionStore();
 
-  const summary = summaryData || { balance: 0, total_income: 0, total_expense: 0 };
-  const transactions = transactionsData || [];
-  const currentInsight = insightData?.insight || `Tap to analyze your spending habits.`;
-  
-  const refreshing = refetchingSummary || refetchingTransactions;
+  useEffect(() => {
+    fetchTransactions();
+    fetchSummary();
+  }, []);
 
   const onRefresh = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await Promise.all([refetchSummary(), refetchTransactions(), refetchInsight()]);
-  }, [refetchSummary, refetchTransactions, refetchInsight]);
+    await Promise.all([fetchTransactions(), fetchSummary()]);
+  }, [fetchTransactions, fetchSummary]);
 
-  const handleAIAssistant = useCallback(() => {
+  const handleAIAssistant = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setInsightVisible(true);
+    try {
+      const data = await getInsight();
+      if (data && data.insight) {
+        setInsightData(data.insight);
+      }
+    } catch (err) {
+      console.log('Error fetching insight', err);
+    }
   }, []);
 
   const openAddModal = useCallback(() => {
@@ -66,7 +81,7 @@ export default function HomeScreen() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.aiBannerTitle}>AI Smart Insight</Text>
-          <Text style={styles.aiBannerText} numberOfLines={1}>{currentInsight}</Text>
+          <Text style={styles.aiBannerText} numberOfLines={1}>{insightData}</Text>
         </View>
         <Feather name="chevron-right" size={18} color={COLORS.textSecondary} />
       </TouchableOpacity>
@@ -74,21 +89,21 @@ export default function HomeScreen() {
       {/* Total Balance Card */}
       <View style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Total Balance</Text>
-        <Text style={styles.balanceAmount}>{currency.symbol}{summary.balance.toFixed(2)}</Text>
+        <Text style={styles.balanceAmount}>{currency.symbol}{(summary?.balance || 0).toFixed(2)}</Text>
         
         <View style={styles.balanceStats}>
           <View style={styles.statItem}>
             <Feather name="arrow-down-left" size={20} color={COLORS.success} />
             <View style={{ marginLeft: 8 }}>
               <Text style={styles.statLabel}>Income</Text>
-              <Text style={styles.statValue}>{currency.symbol}{summary.total_income.toFixed(2)}</Text>
+              <Text style={styles.statValue}>{currency.symbol}{(summary?.total_income || 0).toFixed(2)}</Text>
             </View>
           </View>
           <View style={styles.statItem}>
             <Feather name="arrow-up-right" size={20} color={COLORS.danger} />
             <View style={{ marginLeft: 8 }}>
               <Text style={styles.statLabel}>Expenses</Text>
-              <Text style={styles.statValue}>{currency.symbol}{summary.total_expense.toFixed(2)}</Text>
+              <Text style={styles.statValue}>{currency.symbol}{(summary?.total_expense || 0).toFixed(2)}</Text>
             </View>
           </View>
         </View>
@@ -104,25 +119,17 @@ export default function HomeScreen() {
     </View>
   );
 
-  if (loadingSummary || loadingTransactions) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: COLORS.textSecondary }}>Loading your finances...</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <FlatList 
         data={transactions}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <TransactionRow item={item} />}
+        renderItem={({ item }) => <TransactionRow item={item as any} />}
         ListHeaderComponent={renderHeader}
         contentContainerStyle={{ paddingBottom: 100 }}
         style={{ paddingHorizontal: SIZES.padding }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+          <RefreshControl refreshing={isLoading} onRefresh={onRefresh} tintColor={COLORS.primary} />
         }
         initialNumToRender={15}
         maxToRenderPerBatch={10}
@@ -130,6 +137,12 @@ export default function HomeScreen() {
         removeClippedSubviews
         ListEmptyComponent={<Text style={styles.emptyText}>No transactions found</Text>}
       />
+
+      {error && (
+        <View style={{ padding: 10, backgroundColor: COLORS.danger }}>
+          <Text style={{ color: '#fff', textAlign: 'center' }}>{error}</Text>
+        </View>
+      )}
 
       {/* Floating Action Button (FAB) */}
       <TouchableOpacity style={styles.fab} onPress={openAddModal}>
@@ -146,7 +159,8 @@ export default function HomeScreen() {
         visible={insightVisible}
         onClose={() => setInsightVisible(false)}
         title="AI Financial Assistant"
-        message={currentInsight}
+        message={insightData}
+        actions={undefined}
       />
     </View>
   );
