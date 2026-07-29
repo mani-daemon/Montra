@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Request
+from fastapi_cache.decorator import cache
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -11,7 +12,9 @@ from services.transaction_service import TransactionService
 router = APIRouter(prefix="/api/v1/transactions", tags=["Transactions"])
 
 @router.get("/summary")
+@cache(expire=60)
 def get_summary(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
     transaction_service: TransactionService = Depends(get_transaction_service)

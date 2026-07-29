@@ -42,8 +42,16 @@ class GeminiProvider(AIProvider):
             ),
         )
         
-        data = json.loads(response.text)
-        return data
+        try:
+            data = json.loads(response.text)
+            # Validate JSON structure
+            if not all(k in data for k in ['merchant_name', 'total_amount', 'date']):
+                raise ValueError("Invalid receipt data structure from AI")
+            return data
+        except json.JSONDecodeError:
+            raise ValueError("Invalid JSON response from AI")
+        except Exception as e:
+            raise ValueError(f"AI analysis failed: {str(e)}")
 
     def chat(self, prompt: str, user_transactions: list) -> str:
         tx_context = "User's Recent Transactions:\n"

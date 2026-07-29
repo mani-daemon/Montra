@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+    
+    # Architecture and Security Additions
+    DATABASE_URL: str = "sqlite:///./montra_dev.db"
+    FORCE_HTTPS: bool = False
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     @model_validator(mode="after")
     def require_secret_in_production(self):
